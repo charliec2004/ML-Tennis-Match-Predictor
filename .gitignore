@@ -1,0 +1,11 @@
+venv/
+.venv/
+__pycache__/
+*.pyc
+data/raw/*
+!data/raw/.keep
+data/outputs
+models/*
+data/processed/*
+data/outputs/*
+.DS_Store
