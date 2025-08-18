@@ -6,7 +6,6 @@ XGBoost (Extreme Gradient Boosting) is an optimized implementation of gradient b
 
 ## Key Advantages
 
-
 ### 1. Gradient Boosting Foundation
 
 - Built on decision tree ensembles using boosting.
