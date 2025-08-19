@@ -37,8 +37,6 @@ def init_elo_state():
     surf_clay_elo   = master_elo.copy()
     surf_carpet_elo = master_elo.copy()
 
-
-
 # Add a helper function to handle case-insensitive lookups
 def _case_insensitive_lookup(dictionary, key):
     """
@@ -59,8 +57,9 @@ def _case_insensitive_lookup(dictionary, key):
     # Not found at all
     return key, False
 
-# ---- GET FUNCTIONS ----
 
+
+# ---- GET FUNCTIONS ----
 def get_player_master_elo(player_name: str) -> float:
     actual_key, found = _case_insensitive_lookup(master_elo, player_name)
     if found:
@@ -95,6 +94,7 @@ def get_player_surf_carpet_elo(player_name: str) -> float:
         return surf_carpet_elo[actual_key]
     else:
         raise KeyError(f"No carpet ELO found for player '{player_name}'")
+
 
 # ---- UPDATE FUNCTIONS ----
 def update_player_master_elo(player_name: str, new_elo: float) -> None:

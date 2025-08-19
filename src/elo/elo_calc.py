@@ -35,7 +35,7 @@ TODO: Possibly make K dynamic:
 
 # --------- HELPER FUNCTIONS ---------
 
-def win_probability(p1_elo: float, p2_elo: float, scale: float = SCALE_CONSTANT) -> Tuple[float, float]:
+def _win_probability(p1_elo: float, p2_elo: float, scale: float = SCALE_CONSTANT) -> Tuple[float, float]:
     p1_probability = 1/(1+10 ** ((p2_elo - p1_elo)/scale))
     p2_probaility = 1-p1_probability
     return p1_probability, p2_probaility
@@ -46,7 +46,7 @@ def win_probability(p1_elo: float, p2_elo: float, scale: float = SCALE_CONSTANT)
 def calc_elo(p1_elo: float, p2_elo: float, p1_won: bool, k: float = DEFAULT_K) -> Tuple[float, float]:
     
     # Calculate the probabilty of each to win based on elo (determines if a win is an upset or expected)
-    p1_prob , p2_prob = win_probability(p1_elo, p2_elo)
+    p1_prob , p2_prob = _win_probability(p1_elo, p2_elo)
 
     # Determine the winner of the match
     p1_score: float = 1.0 if p1_won else 0.0
