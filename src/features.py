@@ -28,11 +28,12 @@ def generate_features(raw_data):
     for _, row in df.iterrows():
         p1 = row['player_1']
         p2 = row['player_2']
+        surf = row['surface']  # Capture the surface from CSV
         # CSV’s target: 0 if p1 won, 1 if p2 won
         p1_won = (row['target'] == 0)
 
         # fetch pre‐match ELOs and update in-memory state
-        (elos1, elos2) = process_elo(p1, p2, p1_won)
+        (elos1, elos2) = process_elo(p1, p2, surf, p1_won)
 
         # record master ELOs
         elo_p1.append(elos1[0])

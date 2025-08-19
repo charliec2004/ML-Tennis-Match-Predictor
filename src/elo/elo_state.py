@@ -51,7 +51,7 @@ def _case_insensitive_lookup(dictionary, key):
     key_lower = key.lower()
     for dict_key in dictionary:
         if dict_key.lower() == key_lower:
-            print(f"Case mismatch: '{key}' found as '{dict_key}'")
+            # print(f"Case mismatch: '{key}' found as '{dict_key}'")
             return dict_key, True
     
     # Not found at all
