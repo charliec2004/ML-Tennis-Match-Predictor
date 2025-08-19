@@ -1,0 +1,1 @@
+# Trains an XGBoost model with early stopping, writes model artifact, feature list, and training log.
