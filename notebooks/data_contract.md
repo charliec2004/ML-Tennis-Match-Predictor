@@ -33,18 +33,28 @@
 
 ### Dynamic Features (built in pipeline)
 
-- elo_A_pre
-- elo_B_pre
+- elo_p1
+- elo_p2
 - elo_diff
-- surf_elo_A_pre
-- surf_elo_B_pre
-- surf_elo_diff
-- rest_days_A
-- rest_days_B
-- h2h_A
-- h2h_B
-- recent_wr_A
-- recent_wr_B
+- surf_hard_elo_p1
+- surf_grass_elo_p1
+- surf_clay_elo_p1
+- surf_carpet_elo_p1
+- surf_hard_elo_p2
+- surf_grass_elo_p2
+- surf_clay_elo_p2
+- surf_carpet_elo_p2
+- win_rate_all_p1
+- win_rate_all_p2
+- win_rate_5_p1
+- win_rate_5_p2
+- win_rate_10_p1
+- win_rate_10_p2
+- h2h_win_rate_p1
+- total_matches_p1
+- total_matches_p2
+- days_since_last_p1
+- days_since_last_p2
 
 ### Target
 

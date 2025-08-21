@@ -40,7 +40,6 @@
 
 ## Step 6: Evaluate
 
-- `main.py` → `metrics.evaluate()`
 - Produces:
   - logloss, Brier, AUC, calibration curve.
   - Saves plots and JSON in `outputs/`.

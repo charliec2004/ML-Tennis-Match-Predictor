@@ -101,21 +101,22 @@ def train_xgboost(X_train: pd.DataFrame, y_train: np.ndarray, X_val: pd.DataFram
     """Train XGBoost model with early stopping and validation tracking."""
     print("\n🚀 Training XGBoost...")
     
-    # Default parameters optimized for tennis prediction
+    # Default parameters with MORE AGGRESSIVE EARLY STOPPING
     if params is None:
         params = {
-            'objective': 'binary:logistic',  # Binary classification
-            'eval_metric': 'logloss',        # Optimize for log loss
-            'max_depth': 6,                  # Tree depth
-            'learning_rate': 0.1,            # Step size shrinkage
-            'subsample': 0.8,                # Fraction of samples per tree
-            'colsample_bytree': 0.8,         # Fraction of features per tree
-            'min_child_weight': 1,           # Minimum sum of instance weight in child
-            'reg_alpha': 0.1,                # L1 regularization
-            'reg_lambda': 1.0,               # L2 regularization
-            'random_state': 42,              # Reproducibility
-            'n_jobs': -1,                    # Use all CPU cores
-            'verbosity': 0                   # Suppress warnings
+            'objective': 'binary:logistic',
+            'eval_metric': 'logloss',
+            'max_depth': 4,                  
+            'learning_rate': 0.05,           
+            'subsample': 0.7,                
+            'colsample_bytree': 0.7,         
+            'min_child_weight': 5,           
+            'reg_alpha': 1.0,                
+            'reg_lambda': 2.0,               
+            'gamma': 1.0,                    
+            'random_state': 42,
+            'n_jobs': -1,
+            'verbosity': 0
         }
     
     # Create DMatrix objects for efficient XGBoost training
@@ -127,20 +128,20 @@ def train_xgboost(X_train: pd.DataFrame, y_train: np.ndarray, X_val: pd.DataFram
     evallist = [(dtrain, 'train'), (dval, 'eval')]
     evals_result: Dict[str, Any] = {}
     
-    print(f"   🏋️  Training with early stopping...")
-    print(f"      Max rounds: 1000")
-    print(f"      Early stopping: 50 rounds")
+    print(f"   🏋️  Training with AGGRESSIVE early stopping...")
+    print(f"      Max rounds: 500")                    # REDUCED from 1000
+    print(f"      Early stopping: 20 rounds")         # REDUCED from 50
     print(f"      Evaluation metric: {params['eval_metric']}")
     
-    # Train model with early stopping
+    # Train model with MORE AGGRESSIVE early stopping
     model = xgb.train(
         params=params,
         dtrain=dtrain,
-        num_boost_round=1000,              # Maximum trees
+        num_boost_round=500,               # REDUCED: Stop earlier
         evals=evallist,
         evals_result=evals_result,
-        early_stopping_rounds=50,          # Stop if no improvement
-        verbose_eval=50                    # Print every 50 rounds
+        early_stopping_rounds=20,          # REDUCED: Stop after 20 rounds of no improvement
+        verbose_eval=25                    # Print every 25 rounds
     )
     
     print(f"   ✅ Training completed!")
@@ -256,9 +257,9 @@ def save_model_and_results(model: xgb.Booster, feature_names: List[str], results
     print(f"   🔍 Feature importance saved to {importance_path}")
 
 
-def main() -> Tuple[xgb.Booster, Dict[str, Any]]:
-    """Main XGBoost training pipeline."""
-    print("🎾 Tennis Match Prediction - XGBoost Training")
+def train_xgboost_pipeline() -> Tuple[xgb.Booster, Dict[str, Any]]:
+    """XGBoost training pipeline that can be called from main.py"""
+    print("🚀 Tennis Match Prediction - XGBoost Training")
     print("=" * 60)
     
     try:
@@ -295,53 +296,35 @@ def main() -> Tuple[xgb.Booster, Dict[str, Any]]:
         print(f"\n💾 Saving model and results...")
         save_model_and_results(model, feature_names, results, importance_df)
         
-        # Step 8: Final summary
-        print(f"\n" + "=" * 60)
-        print("🏁 XGBOOST TRAINING COMPLETE!")
-        print("=" * 60)
-        
+        # Step 8: Performance summary
         val_auc = results['val']['auc']
         test_auc = results['test']['auc']
         val_acc = results['val']['accuracy']
         test_acc = results['test']['accuracy']
         
-        print(f"📈 Validation: AUC {val_auc:.4f} | Accuracy {val_acc:.4f}")
-        print(f"🎯 Test:       AUC {test_auc:.4f} | Accuracy {test_acc:.4f}")
-        print(f"🌳 Trees used: {model.best_iteration}")
-        print(f"📊 Features:   {len(feature_names)}")
+        print(f"\n🏆 XGBoost Results:")
+        print(f"   Validation: AUC {val_auc:.4f} | Accuracy {val_acc:.4f}")
+        print(f"   Test:       AUC {test_auc:.4f} | Accuracy {test_acc:.4f}")
+        print(f"   Trees used: {model.best_iteration}")
         
         # Compare to logistic regression baseline
-        baseline_test_auc = 0.7154  # From your logistic regression results
+        baseline_test_auc = 0.7154
         improvement = test_auc - baseline_test_auc
-        print(f"\n🚀 Improvement over Logistic Regression:")
-        print(f"   Test AUC: {improvement:+.4f} ({improvement/baseline_test_auc*100:+.1f}%)")
-        
-        if improvement > 0.01:
-            print("   ✅ Significant improvement! XGBoost is working well.")
-        elif improvement > 0.005:
-            print("   ✅ Modest improvement. Consider hyperparameter tuning.")
+        if improvement > 0.005:
+            print(f"   ✅ Improvement over baseline: +{improvement:.4f} AUC")
         else:
-            print("   ⚠️  Limited improvement. Your linear baseline was already strong!")
-        
-        print(f"\n📁 Files created in data/outputs/:")
-        print(f"   🤖 model_xgb.json       - Trained XGBoost model")
-        print(f"   📝 feature_names.json   - Feature list")
-        print(f"   📊 results.json         - Performance metrics")
-        print(f"   🔍 feature_importance.csv - Feature rankings")
-        print(f"   📈 training_curves.png  - Training visualization")
+            print(f"   📊 Performance vs baseline: {improvement:+.4f} AUC")
         
         return model, results
         
-    except FileNotFoundError as e:
-        print(f"❌ Error: Could not find required files.")
-        print(f"   {str(e)}")
-        print(f"   Please run 'python src/main.py' first to generate splits.")
-        raise
-        
     except Exception as e:
-        print(f"❌ Unexpected error: {str(e)}")
+        print(f"❌ XGBoost training failed: {str(e)}")
         raise
 
+# Keep your existing main function for standalone usage
+def main() -> Tuple[xgb.Booster, Dict[str, Any]]:
+    """Main XGBoost training pipeline (standalone version)."""
+    return train_xgboost_pipeline()
 
 if __name__ == "__main__":
     main()
