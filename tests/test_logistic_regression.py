@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, log_loss, roc_auc_score
+from sklearn.impute import SimpleImputer
 import warnings
 
 def load_splits():
@@ -25,8 +26,9 @@ def load_splits():
     y_val = pd.read_csv("data/processed/splits/y_val.csv")["target"].values
     y_test = pd.read_csv("data/processed/splits/y_test.csv")["target"].values
     
-    # Load feature names (excludes MATCH_ID)
-    feature_names = list(pd.read_csv("data/processed/splits/feature_names.txt", header=None)[0])
+    # Load feature names (excludes MATCH_ID) - filter out comment lines
+    with open("data/processed/splits/feature_names.txt", 'r') as f:
+        feature_names = [line.strip() for line in f if not line.startswith('#') and line.strip()]
     
     print(f"   ✅ Train: {X_train.shape[0]:,} matches")
     print(f"   ✅ Valid: {X_val.shape[0]:,} matches")
@@ -49,9 +51,9 @@ def prepare_features(X_train, X_val, X_test, feature_names):
     assert not missing_features, f"Missing features in X_train: {missing_features}"
     
     # Extract only feature columns (exclude MATCH_ID from training)
-    X_train_feats = X_train[feature_names]
-    X_val_feats = X_val[feature_names]
-    X_test_feats = X_test[feature_names]
+    X_train_feats = X_train[feature_names].copy()
+    X_val_feats = X_val[feature_names].copy()
+    X_test_feats = X_test[feature_names].copy()
     
     print(f"   ✅ Feature matrix shape: {X_train_feats.shape}")
     print(f"   ✅ MATCH_ID excluded from features")
@@ -63,7 +65,17 @@ def prepare_features(X_train, X_val, X_test, feature_names):
     
     if train_nans + val_nans + test_nans > 0:
         print(f"   ⚠️  NaN values found: Train={train_nans}, Val={val_nans}, Test={test_nans}")
-        print(f"      Sklearn will handle these automatically")
+        print(f"      Imputing with median values...")
+        
+        # Create and fit imputer on training data only
+        imputer = SimpleImputer(strategy='median')
+        
+        # Use direct assignment to avoid DataFrame constructor issues
+        X_train_feats.loc[:, :] = imputer.fit_transform(X_train_feats)
+        X_val_feats.loc[:, :] = imputer.transform(X_val_feats)
+        X_test_feats.loc[:, :] = imputer.transform(X_test_feats)
+        
+        print(f"   ✅ NaN values imputed successfully")
     else:
         print(f"   ✅ No NaN values detected")
     
@@ -168,11 +180,6 @@ def main():
             print("⚠️  Moderate baseline performance")
         else:
             print("❌ Weak baseline performance - features may need improvement")
-        
-        print(f"\n💡 Next Steps:")
-        print(f"   1. Try XGBoost for potentially better performance")
-        print(f"   2. Feature engineering based on coefficient analysis")
-        print(f"   3. Hyperparameter tuning")
         
         return model, (val_logloss, val_auc, val_acc), (test_logloss, test_auc, test_acc)
         
