@@ -4,5 +4,6 @@ __pycache__/
 *.pyc
 models/*
 data/outputs/*
+data/processed/*
 .DS_Store
 backups/
