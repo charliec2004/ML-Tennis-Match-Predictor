@@ -72,53 +72,64 @@ def prepare_match_data(matches_df: pd.DataFrame) -> pd.DataFrame:
     return features_df
 
 
-def make_predictions(model: xgb.Booster, features_df: pd.DataFrame, 
-                    feature_names: List[str]) -> pd.DataFrame:
-    """
-    Generate predictions for prepared match data.
-    
-    Args:
-        model: Trained XGBoost model
-        features_df: DataFrame with generated features
-        feature_names: List of feature column names
-    
-    Returns:
-        DataFrame with predictions and metadata
-    """
-    print("🎯 Generating predictions...")
-    
-    # Extract features (same process as training)
-    X_features = features_df[feature_names].copy()
-    
-    # Handle NaN values (same as training)
-    if X_features.isnull().sum().sum() > 0:
-        print("   ⚠️  NaN values found, imputing with median...")
-        from sklearn.impute import SimpleImputer
-        imputer = SimpleImputer(strategy='median')
-        X_features = pd.DataFrame(
-            np.asarray(imputer.fit_transform(X_features)),
-            columns=feature_names,
-            index=X_features.index
-        )
-    
-    # Create DMatrix and predict
-    dmatrix = xgb.DMatrix(X_features, feature_names=feature_names)
-    predictions = model.predict(dmatrix)
-    
-    # Create results DataFrame
-    results_df = features_df[['date', 'player_1', 'player_2', 'surface']].copy()
-    results_df['prob_p2_wins'] = predictions
-    results_df['prob_p1_wins'] = 1 - predictions
-    results_df['predicted_winner'] = np.where(
-        predictions >= 0.5, 
-        results_df['player_2'], 
-        results_df['player_1']
-    )
-    results_df['confidence'] = np.maximum(predictions, 1 - predictions)
-    results_df['prediction_date'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    
-    print(f"   ✅ Predictions generated for {len(results_df)} matches")
-    return results_df
+def make_predictions(features_df: pd.DataFrame, model_path: str = "data/outputs/model_xgb.json") -> pd.DataFrame:
+    """Generate predictions for processed match features."""
+    try:
+        # Load model and feature names
+        model, feature_names = load_trained_model(model_path)
+        
+        print("🎯 Generating predictions...")
+        
+        # Select ONLY the 38 expected features in the correct order
+        X_features = features_df[feature_names].copy()
+        
+        print(f"   ✅ Feature matrix shape: {X_features.shape}")
+        print(f"   ✅ Expected: ({len(features_df)}, {len(feature_names)})")
+        
+        # Handle NaN values with robust imputation
+        if X_features.isnull().any().any():
+            print("   ⚠️  NaN values found, imputing with median...")
+            from sklearn.impute import SimpleImputer
+            
+            # For columns with ALL NaN values, fill with 0 before imputing
+            all_nan_cols = X_features.columns[X_features.isnull().all()]
+            if len(all_nan_cols) > 0:
+                print(f"   🔧 Filling all-NaN columns with 0: {list(all_nan_cols)}")
+                X_features[all_nan_cols] = 0
+            
+            # Now impute remaining NaN values with median
+            imputer = SimpleImputer(strategy='median')
+            X_features_imputed = pd.DataFrame(
+                imputer.fit_transform(X_features), 
+                columns=X_features.columns, 
+                index=X_features.index
+            )
+        else:
+            X_features_imputed = X_features
+        
+        # Verify final shape
+        print(f"   ✅ Final feature matrix shape: {X_features_imputed.shape}")
+        assert X_features_imputed.shape[1] == len(feature_names), f"Shape mismatch: {X_features_imputed.shape[1]} vs {len(feature_names)}"
+        
+        # Create DMatrix and predict
+        dmatrix = xgb.DMatrix(X_features_imputed, feature_names=feature_names)
+        predictions = model.predict(dmatrix)
+        
+        # Create results DataFrame
+        results_df = features_df[['date', 'player_1', 'player_2']].copy()
+        results_df['prob_p1_wins'] = predictions
+        results_df['prob_p2_wins'] = 1 - predictions
+        results_df['predicted_winner'] = np.where(predictions > 0.5, results_df['player_1'], results_df['player_2'])
+        results_df['confidence'] = np.maximum(predictions, 1 - predictions)
+        
+        print(f"   ✅ Predictions generated for {len(results_df)} matches")
+        
+        return results_df
+        
+    except Exception as e:
+        print(f"   ❌ Error during prediction: {str(e)}")
+        print("   💡 Check your CSV file format and try again.")
+        raise
 
 
 def predict_matches(matches_df: pd.DataFrame, 
@@ -145,7 +156,7 @@ def predict_matches(matches_df: pd.DataFrame,
     features_df = prepare_match_data(matches_df)
     
     # Step 3: Generate predictions
-    predictions_df = make_predictions(model, features_df, feature_names)
+    predictions_df = make_predictions(features_df, model_path)
     
     # Step 4: Save results
     if save_results:
