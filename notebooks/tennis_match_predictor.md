@@ -108,14 +108,14 @@ Despite these measures, mild overfitting remained visible in training curves.
 
 ## 7. Application Example: 2025 US Open Predictions
 
-The model was used to predict selected Round 1 Men’s Singles matches:
+The model was used to predict Round 1 Men's Singles matches for the 2025 US Open:
 
-- **Bu Y. vs. Musetti L.** → Predicted: Bu Y. (67.7%)  
-- **Rinderknech A. vs. Ruud C.** → Predicted: Rinderknech A. (67.2%)  
-- **Djokovic N. vs. Nishioka Y.** → Predicted: Djokovic N. (63.7%)  
-- **Griekspoor T. vs. Alcaraz C.** → Predicted upset: Griekspoor T. (61.8%)  
+- **Tiafoe F. vs. Nishioka Y.** → Predicted upset: Nishioka Y. (66.6%)  
+- **Lehecka J. vs. Coric B.** → Predicted upset: Coric B. (64.8%)  
+- **Machac T. vs. Nardi L.** → Predicted: Nardi L. (64.7%)  
+- **Shapovalov D. vs. Fucsovics M.** → Predicted: Fucsovics M. (61.4%)  
 
-> **Note**: Predictions are for demonstration only and **not betting advice**.  
+> **Note**: Predictions are for demonstration only and **not betting advice**.
 
 ---
 
