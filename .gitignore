@@ -3,7 +3,15 @@ venv/
 __pycache__/
 *.pyc
 models/*
-data/outputs/*
-data/processed/*
 .DS_Store
 backups/
+
+# Ignore generated files but allow directory structure
+data/outputs/*
+!data/outputs/.gitkeep
+
+data/processed/*
+!data/processed/.gitkeep
+!data/processed/splits/
+data/processed/splits/*
+!data/processed/splits/.gitkeep
