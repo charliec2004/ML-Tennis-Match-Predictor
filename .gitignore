@@ -9,5 +9,5 @@ models/*
 data/processed/*
 data/outputs/*
 .DS_Store
-tests/
+# tests/
 backups/
