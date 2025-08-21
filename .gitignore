@@ -2,10 +2,8 @@ venv/
 .venv/
 __pycache__/
 *.pyc
-data/outputs
 models/*
-data/processed/*
 data/outputs/*
+data/processed/*
 .DS_Store
-# tests/
 backups/
