@@ -101,7 +101,7 @@ def train_xgboost(X_train: pd.DataFrame, y_train: np.ndarray, X_val: pd.DataFram
     """Train XGBoost model with early stopping and validation tracking."""
     print("\n🚀 Training XGBoost...")
     
-    # Default parameters with MORE AGGRESSIVE EARLY STOPPING
+    # Default parameters with AGGRESSIVE EARLY STOPPING
     if params is None:
         params = {
             'objective': 'binary:logistic',

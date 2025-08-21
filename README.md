@@ -11,7 +11,7 @@ A machine learning system for predicting professional tennis match outcomes usin
 
 ### What This Project Does
 
-This system predicts the outcome of professional tennis matches by analyzing historical match data and player performance patterns. Given two players and match conditions (surface, tournament type, etc.), it calculates the probability of each player winning.
+This system predicts the outcome of professional tennis matches by analyzing historical match data and player performance patterns. Given two players and match conditions (surface, tournament type, etc.), it calculates the probability of each player winning. For a more formal high-level overview of this project refer to notebooks/tennis_match_predictor.md.
 
 ### How It Works
 
