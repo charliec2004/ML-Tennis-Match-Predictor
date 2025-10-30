@@ -18,26 +18,23 @@ import matplotlib.pyplot as plt
 
 def load_splits() -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, np.ndarray, np.ndarray, np.ndarray, List[str]]:
     """Load pre-made time splits from CSV files."""
-    print("📂 Loading time splits...")
+    print("Loading time splits...")
     
-    # Load feature matrices
     X_train = pd.read_csv("data/processed/splits/X_train.csv")
     X_val = pd.read_csv("data/processed/splits/X_val.csv")
     X_test = pd.read_csv("data/processed/splits/X_test.csv")
     
-    # Load targets and explicitly convert to numpy arrays
     y_train = np.asarray(pd.read_csv("data/processed/splits/y_train.csv")["target"])
     y_val = np.asarray(pd.read_csv("data/processed/splits/y_val.csv")["target"])
     y_test = np.asarray(pd.read_csv("data/processed/splits/y_test.csv")["target"])
     
-    # Load feature names (excludes MATCH_ID)
     with open("data/processed/splits/feature_names.txt", 'r') as f:
         feature_names = [line.strip() for line in f if not line.startswith('#') and line.strip()]
     
-    print(f"   ✅ Train: {X_train.shape[0]:,} matches")
-    print(f"   ✅ Valid: {X_val.shape[0]:,} matches")
-    print(f"   ✅ Test:  {X_test.shape[0]:,} matches")
-    print(f"   ✅ Features: {len(feature_names)} columns")
+    print(f"   Train: {X_train.shape[0]:,} matches")
+    print(f"   Valid: {X_val.shape[0]:,} matches")
+    print(f"   Test:  {X_test.shape[0]:,} matches")
+    print(f"   Features: {len(feature_names)} columns")
     
     return X_train, X_val, X_test, y_train, y_val, y_test, feature_names
 
@@ -45,34 +42,29 @@ def load_splits() -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, np.ndarray,
 def prepare_features(X_train: pd.DataFrame, X_val: pd.DataFrame, X_test: pd.DataFrame, 
                     feature_names: List[str]) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Extract feature columns and handle missing values."""
-    print("\n🔧 Preparing features...")
+    print("\nPreparing features...")
     
-    # Validate required columns
     assert "MATCH_ID" in X_train.columns, "MATCH_ID missing from X_train"
     missing_features = [f for f in feature_names if f not in X_train.columns]
     assert not missing_features, f"Missing features in X_train: {missing_features}"
     
-    # Extract feature columns (exclude MATCH_ID)
     X_train_feats = X_train[feature_names].copy()
     X_val_feats = X_val[feature_names].copy()
     X_test_feats = X_test[feature_names].copy()
     
-    print(f"   ✅ Feature matrix shape: {X_train_feats.shape}")
-    print(f"   ✅ MATCH_ID excluded from features")
+    print(f"   Feature matrix shape: {X_train_feats.shape}")
+    print(f"   MATCH_ID excluded from features")
     
-    # Handle NaN values
     train_nans = X_train_feats.isnull().sum().sum()
     val_nans = X_val_feats.isnull().sum().sum()
     test_nans = X_test_feats.isnull().sum().sum()
     
     if train_nans + val_nans + test_nans > 0:
-        print(f"   ⚠️  NaN values found: Train={train_nans}, Val={val_nans}, Test={test_nans}")
+        print(f"   NaN values found: Train={train_nans}, Val={val_nans}, Test={test_nans}")
         print(f"      Imputing with median values...")
         
-        # XGBoost can handle NaNs natively, but we'll impute for consistency
         imputer = SimpleImputer(strategy='median')
         
-        # Transform and create new DataFrames
         X_train_feats = pd.DataFrame(
             np.asarray(imputer.fit_transform(X_train_feats)),
             columns=feature_names,
@@ -89,9 +81,9 @@ def prepare_features(X_train: pd.DataFrame, X_val: pd.DataFrame, X_test: pd.Data
             index=X_test_feats.index
         )
         
-        print(f"   ✅ NaN values imputed successfully")
+        print(f"   NaN values imputed successfully")
     else:
-        print(f"   ✅ No NaN values detected")
+        print(f"   No NaN values detected")
     
     return X_train_feats, X_val_feats, X_test_feats
 
@@ -99,9 +91,8 @@ def prepare_features(X_train: pd.DataFrame, X_val: pd.DataFrame, X_test: pd.Data
 def train_xgboost(X_train: pd.DataFrame, y_train: np.ndarray, X_val: pd.DataFrame, y_val: np.ndarray,
                   feature_names: List[str], params: Optional[Dict[str, Any]] = None) -> Tuple[xgb.Booster, Dict[str, Any]]:
     """Train XGBoost model with early stopping and validation tracking."""
-    print("\n🚀 Training XGBoost...")
+    print("\nTraining XGBoost...")
     
-    # Default parameters with AGGRESSIVE EARLY STOPPING
     if params is None:
         params = {
             'objective': 'binary:logistic',
@@ -119,34 +110,31 @@ def train_xgboost(X_train: pd.DataFrame, y_train: np.ndarray, X_val: pd.DataFram
             'verbosity': 0
         }
     
-    # Create DMatrix objects for efficient XGBoost training
-    print(f"   📊 Creating DMatrix objects...")
+    print(f"   Creating DMatrix objects...")
     dtrain = xgb.DMatrix(X_train, label=y_train, feature_names=feature_names)
     dval = xgb.DMatrix(X_val, label=y_val, feature_names=feature_names)
     
-    # Set up evaluation and early stopping
     evallist = [(dtrain, 'train'), (dval, 'eval')]
     evals_result: Dict[str, Any] = {}
     
-    print(f"   🏋️  Training with AGGRESSIVE early stopping...")
-    print(f"      Max rounds: 500")                    # REDUCED from 1000
-    print(f"      Early stopping: 20 rounds")         # REDUCED from 50
+    print(f"   Training with aggressive early stopping...")
+    print(f"      Max rounds: 500")
+    print(f"      Early stopping: 20 rounds")
     print(f"      Evaluation metric: {params['eval_metric']}")
     
-    # Train model with MORE AGGRESSIVE early stopping
     model = xgb.train(
         params=params,
         dtrain=dtrain,
-        num_boost_round=500,               # REDUCED: Stop earlier
+        num_boost_round=500,
         evals=evallist,
         evals_result=evals_result,
-        early_stopping_rounds=20,          # REDUCED: Stop after 20 rounds of no improvement
-        verbose_eval=25                    # Print every 25 rounds
+        early_stopping_rounds=20,
+        verbose_eval=25
     )
     
-    print(f"   ✅ Training completed!")
-    print(f"   🌳 Best iteration: {model.best_iteration}")
-    print(f"   🏆 Best eval score: {model.best_score:.6f}")
+    print(f"   Training completed!")
+    print(f"   Best iteration: {model.best_iteration}")
+    print(f"   Best eval score: {model.best_score:.6f}")
     
     return model, evals_result
 
@@ -155,12 +143,10 @@ def evaluate_model(model: xgb.Booster, X_feats: pd.DataFrame, y_true: np.ndarray
                   feature_names: List[str], split_name: str) -> Dict[str, Any]:
     """Evaluate XGBoost model and return metrics."""
     
-    # Create DMatrix and get predictions
     dmatrix = xgb.DMatrix(X_feats, feature_names=feature_names)
     y_pred_proba = model.predict(dmatrix)
     y_pred = (y_pred_proba >= 0.5).astype(int)
     
-    # Calculate metrics
     logloss = log_loss(y_true, y_pred_proba)
     auc = roc_auc_score(y_true, y_pred_proba)
     accuracy = accuracy_score(y_true, y_pred)
@@ -171,27 +157,24 @@ def evaluate_model(model: xgb.Booster, X_feats: pd.DataFrame, y_true: np.ndarray
         'logloss': logloss,
         'auc': auc,
         'accuracy': accuracy,
-        'predictions': y_pred_proba.tolist()  # Convert to list for JSON serialization
+        'predictions': y_pred_proba.tolist()
     }
 
 
 def analyze_feature_importance(model: xgb.Booster, feature_names: List[str], top_k: int = 20) -> pd.DataFrame:
     """Analyze and display feature importance from XGBoost model."""
-    print(f"\n🔍 Top {top_k} Features by Importance:")
+    print(f"\nTop {top_k} Features by Importance:")
     print("-" * 50)
     
-    # Get feature importance (gain-based)
     importance = model.get_score(importance_type='gain')
     
-    # Create DataFrame and sort
     importance_df = pd.DataFrame([
         {'feature': feature, 'importance': importance.get(feature, 0.0)}
         for feature in feature_names
     ]).sort_values('importance', ascending=False)
     
-    # Display top features using enumerate for proper integer indexing
     for i, (_, row) in enumerate(importance_df.head(top_k).iterrows()):
-        print(f"{i+1:2d}. 📊 {row['feature']:28s} {row['importance']:8.4f}")
+        print(f"{i+1:2d}. {row['feature']:28s} {row['importance']:8.4f}")
     
     return importance_df
 
@@ -201,11 +184,9 @@ def plot_training_curves(evals_result: Dict[str, Any], output_dir: str = "data/o
     
     Path(output_dir).mkdir(parents=True, exist_ok=True)
     
-    # Extract training history
     train_logloss = evals_result['train']['logloss']
     val_logloss = evals_result['eval']['logloss']
     
-    # Create plot
     plt.figure(figsize=(10, 6))
     plt.plot(train_logloss, label='Training Log Loss', color='blue')
     plt.plot(val_logloss, label='Validation Log Loss', color='red')
@@ -215,12 +196,11 @@ def plot_training_curves(evals_result: Dict[str, Any], output_dir: str = "data/o
     plt.legend()
     plt.grid(True, alpha=0.3)
     
-    # Save plot
     plot_path = Path(output_dir) / "training_curves.png"
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
     plt.close()
     
-    print(f"   📈 Training curves saved to {plot_path}")
+    print(f"   Training curves saved to {plot_path}")
 
 
 def save_model_and_results(model: xgb.Booster, feature_names: List[str], results: Dict[str, Any], 
@@ -230,18 +210,15 @@ def save_model_and_results(model: xgb.Booster, feature_names: List[str], results
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
     
-    # Save XGBoost model
     model_path = output_path / "model_xgb.json"
     model.save_model(str(model_path))
-    print(f"   💾 Model saved to {model_path}")
+    print(f"   Model saved to {model_path}")
     
-    # Save feature names
     feature_path = output_path / "feature_names.json"
     with open(feature_path, 'w') as f:
         json.dump(feature_names, f, indent=2)
-    print(f"   📝 Feature names saved to {feature_path}")
+    print(f"   Feature names saved to {feature_path}")
     
-    # Save results (predictions are already converted to lists)
     results_path = output_path / "results.json"
     json_results = {}
     for split, metrics in results.items():
@@ -249,35 +226,30 @@ def save_model_and_results(model: xgb.Booster, feature_names: List[str], results
     
     with open(results_path, 'w') as f:
         json.dump(json_results, f, indent=2)
-    print(f"   📊 Results saved to {results_path}")
+    print(f"   Results saved to {results_path}")
     
-    # Save feature importance
     importance_path = output_path / "feature_importance.csv"
     importance_df.to_csv(importance_path, index=False)
-    print(f"   🔍 Feature importance saved to {importance_path}")
+    print(f"   Feature importance saved to {importance_path}")
 
 
 def train_xgboost_pipeline() -> Tuple[xgb.Booster, Dict[str, Any]]:
     """XGBoost training pipeline that can be called from main.py"""
-    print("🚀 Tennis Match Prediction - XGBoost Training")
+    print("Tennis Match Prediction - XGBoost Training")
     print("=" * 60)
     
     try:
-        # Step 1: Load data
         X_train, X_val, X_test, y_train, y_val, y_test, feature_names = load_splits()
         
-        # Step 2: Prepare features
         X_train_feats, X_val_feats, X_test_feats = prepare_features(
             X_train, X_val, X_test, feature_names
         )
         
-        # Step 3: Train XGBoost model
         model, evals_result = train_xgboost(
             X_train_feats, y_train, X_val_feats, y_val, feature_names
         )
         
-        # Step 4: Evaluate on all splits
-        print("\n📊 Model Evaluation:")
+        print("\nModel Evaluation:")
         print("-" * 60)
         
         results: Dict[str, Any] = {}
@@ -285,46 +257,42 @@ def train_xgboost_pipeline() -> Tuple[xgb.Booster, Dict[str, Any]]:
         results['val'] = evaluate_model(model, X_val_feats, y_val, feature_names, "VAL ")
         results['test'] = evaluate_model(model, X_test_feats, y_test, feature_names, "TEST")
         
-        # Step 5: Analyze feature importance
         importance_df = analyze_feature_importance(model, feature_names)
         
-        # Step 6: Create visualizations
-        print(f"\n📈 Creating visualizations...")
+        print(f"\nCreating visualizations...")
         plot_training_curves(evals_result)
         
-        # Step 7: Save everything
-        print(f"\n💾 Saving model and results...")
+        print(f"\nSaving model and results...")
         save_model_and_results(model, feature_names, results, importance_df)
         
-        # Step 8: Performance summary
         val_auc = results['val']['auc']
         test_auc = results['test']['auc']
         val_acc = results['val']['accuracy']
         test_acc = results['test']['accuracy']
         
-        print(f"\n🏆 XGBoost Results:")
+        print(f"\nXGBoost Results:")
         print(f"   Validation: AUC {val_auc:.4f} | Accuracy {val_acc:.4f}")
         print(f"   Test:       AUC {test_auc:.4f} | Accuracy {test_acc:.4f}")
         print(f"   Trees used: {model.best_iteration}")
         
-        # Compare to logistic regression baseline
         baseline_test_auc = 0.7154
         improvement = test_auc - baseline_test_auc
         if improvement > 0.005:
-            print(f"   ✅ Improvement over baseline: +{improvement:.4f} AUC")
+            print(f"   Improvement over baseline: +{improvement:.4f} AUC")
         else:
-            print(f"   📊 Performance vs baseline: {improvement:+.4f} AUC")
+            print(f"   Performance vs baseline: {improvement:+.4f} AUC")
         
         return model, results
         
     except Exception as e:
-        print(f"❌ XGBoost training failed: {str(e)}")
+        print(f"XGBoost training failed: {str(e)}")
         raise
 
-# Keep your existing main function for standalone usage
+
 def main() -> Tuple[xgb.Booster, Dict[str, Any]]:
     """Main XGBoost training pipeline (standalone version)."""
     return train_xgboost_pipeline()
+
 
 if __name__ == "__main__":
     main()

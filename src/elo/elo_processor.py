@@ -25,15 +25,13 @@ class EloProcessor:
         """Initialize all ELO dictionaries with players from CSV"""
         df = pd.read_csv(csv_path, usecols=[0])
         
-        # Clean up player names
         names = (
             df['player_name']
               .dropna()
-              .str.strip()       # trim whitespace
-              .str.rstrip(',')   # remove trailing commas
+              .str.strip()
+              .str.rstrip(',')
         )
         
-        # Initialize all players with default ELO of 1500.0
         self.master_elo = {n: 1500.0 for n in names}
         self.surf_hard_elo = self.master_elo.copy()
         self.surf_grass_elo = self.master_elo.copy()
@@ -42,18 +40,14 @@ class EloProcessor:
     
     def _case_insensitive_lookup(self, dictionary: Dict[str, float], key: str) -> Tuple[str, bool]:
         """Try to find key in dictionary, first exact match, then case-insensitive"""
-        # Try exact match first
         if key in dictionary:
             return key, True
         
-        # Try case-insensitive match
         key_lower = key.lower()
         for dict_key in dictionary:
             if dict_key.lower() == key_lower:
-                # print(f"Case mismatch: '{key}' found as '{dict_key}'")
                 return dict_key, True
         
-        # Not found at all
         return key, False
     
     def _get_player_rating(self, rating_dict: Dict[str, float], player_name: str) -> float:
@@ -90,16 +84,13 @@ class EloProcessor:
     
     def update_ratings(self, player1: str, player2: str, surface: str, p1_won: bool):
         """Update ratings after a match"""
-        # Get current ratings
         p1_ratings = self.get_player_ratings(player1)
         p2_ratings = self.get_player_ratings(player2)
         
-        # Update master ELO (always updated)
         new_master1, new_master2 = calc_elo(p1_ratings[0], p2_ratings[0], p1_won)
         self._update_player_rating(self.master_elo, player1, new_master1)
         self._update_player_rating(self.master_elo, player2, new_master2)
         
-        # Update surface-specific ELO based on match surface
         surface_lower = surface.lower()
         if surface_lower == "hard":
             new_surf1, new_surf2 = calc_elo(p1_ratings[1], p2_ratings[1], p1_won)

@@ -1,4 +1,4 @@
-# 🎾 US Open 2025 Match Predictor
+# US Open 2025 Match Predictor
 
 [![Python](https://img.shields.io/badge/python-3.8%2B-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -7,7 +7,7 @@
 
 A machine learning system for predicting professional tennis match outcomes using advanced ELO ratings, match history analysis, and gradient boosting algorithms.
 
-## 📖 Project Overview
+## Project Overview
 
 ### What This Project Does
 
@@ -76,7 +76,7 @@ The model's **65.45% accuracy on future matches** is competitive considering:
 - No betting market information or expert insights
 - Purely algorithmic approach without human expertise
 
-## 🚀 Features
+## Features
 
 - **Advanced ELO Rating System**: Surface-specific ELO ratings (Hard, Clay, Grass, Carpet)
 - **Comprehensive Feature Engineering**: 38 features including rankings, match statistics, and historical performance
@@ -85,7 +85,7 @@ The model's **65.45% accuracy on future matches** is competitive considering:
 - **Match Prediction Pipeline**: End-to-end system from raw data to predictions
 - **Professional Tournament Support**: ATP, Grand Slam, and other professional tournaments
 
-## 📊 Model Performance
+## Model Performance
 
 ### Training vs. Future Performance
 
@@ -109,7 +109,7 @@ The model's **65.45% accuracy on future matches** is competitive considering:
 **Training Data**: 65,974 professional matches (2000-2025)  
 **Best Trees Used**: 332 (with early stopping)
 
-## 🏗️ Architecture
+## Architecture
 
 ```text
 ├── data/
@@ -127,7 +127,7 @@ The model's **65.45% accuracy on future matches** is competitive considering:
 └── notebooks/                  # Analysis and documentation
 ```
 
-## 🛠️ Installation
+## Installation
 
 ### Prerequisites
 
@@ -155,7 +155,7 @@ pip install -r requirements.txt
 - **Visualization**: `matplotlib`
 - **Data Processing**: `python-dateutil`, `pytz`
 
-## 🎯 Quick Start
+## Quick Start
 
 ### 1. Train the Model
 
@@ -167,12 +167,12 @@ python src/main.py
 
 This will:
 
-- ✅ Load 65,974 raw tennis matches
-- ✅ Generate 38 engineered features (from 49 total features)
-- ✅ Create time-based train/validation/test splits
-- ✅ Train XGBoost model with early stopping (332 trees)
-- ✅ Evaluate model performance and save results
-- ✅ Optionally predict future matches
+- Load 65,974 raw tennis matches
+- Generate 38 engineered features (from 49 total features)
+- Create time-based train/validation/test splits
+- Train XGBoost model with early stopping (332 trees)
+- Evaluate model performance and save results
+- Optionally predict future matches
 
 ### 2. Make Predictions
 
@@ -191,7 +191,7 @@ import sys
 sys.path.append('src')
 from predict import predict_from_csv
 predictions = predict_from_csv('data/future_matches/your_matches.csv')
-print('✅ Predictions saved to data/outputs/predictions.csv')
+print(' Predictions saved to data/outputs/predictions.csv')
 "
 ```
 
@@ -204,7 +204,7 @@ date,player_1,player_2,predicted_winner,confidence,prob_p1_wins,prob_p2_wins
 2025-08-25,Djokovic N.,Alcaraz C.,Alcaraz C.,0.73,0.27,0.73
 ```
 
-## 📈 Feature Engineering
+## Feature Engineering
 
 The system generates 38 features for each match from an initial 49 feature set:
 
@@ -226,7 +226,7 @@ The system generates 38 features for each match from an initial 49 feature set:
 - **Head-to-Head**: Historical matchup statistics
 - **Recency**: Days since last match for both players
 
-## 🎾 Supported Data Format
+## Supported Data Format
 
 Input matches should include:
 
@@ -240,7 +240,7 @@ Input matches should include:
 - `best_of_3`, `best_of_5`: Match format (0/1)
 - Surface indicators: `surf_hard`, `surf_clay`, etc.
 
-## 📊 Model Details
+## Model Details
 
 ### XGBoost Configuration
 
@@ -273,31 +273,7 @@ TEST  | LogLoss: 0.6132 | AUC: 0.7192 | Accuracy: 65.45%
 
 **Interpretation**: The 4.5% drop from training to test accuracy indicates good generalization. The model doesn't overfit to historical patterns and maintains predictive power on completely unseen future matches.
 
-## 🔧 Advanced Usage
-
-### Custom Model Training
-
-```python
-from src.model_xgb import train_xgboost_pipeline
-
-# Train with custom parameters
-model, results = train_xgboost_pipeline()
-print(f"Test AUC: {results['test']['auc']:.4f}")
-```
-
-### Feature Analysis
-
-```python
-from src.features import generate_features
-import pandas as pd
-
-# Generate features for custom data
-df = pd.read_csv("your_data.csv")
-features_df = generate_features(df)
-print(f"Generated {len(features_df.columns)} features")
-```
-
-## 📝 Project Structure
+## Project Structure
 
 - **`main.py`**: Complete pipeline orchestrator
 - **`features.py`**: Feature engineering with ELO and match history
@@ -306,15 +282,7 @@ print(f"Generated {len(features_df.columns)} features")
 - **`timesplits.py`**: Time-aware data splitting
 - **`elo/`**: ELO rating system implementation
 
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
@@ -342,17 +310,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - ATP and tennis data providers ([ATP Tennis Dataset (2000-2023)](https://www.kaggle.com/datasets/dissfya/atp-tennis-2000-2023daily-pull/versions/829?resource=download))
 - XGBoost development team
 - Professional tennis statistical analysis community
 - Open source machine learning ecosystem
-
-## 📧 Contact
-
-For questions or support, please open an issue in the repository.
-
----
-
-**⭐ Star this repository if you find it useful!**
