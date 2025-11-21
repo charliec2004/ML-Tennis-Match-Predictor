@@ -2,8 +2,13 @@ import pandas as pd
 from elo.elo_processor import EloProcessor
 from matches.match_history_processor import MatchHistoryProcessor
 
-def generate_features(raw_data):
-    """Generate ELO and match history features using class-based processors"""
+
+def generate_features(raw_data, warmup_matches: int = 2000, min_player_matches: int = 5):
+    """
+    Generate ELO and match history features using class-based processors.
+    warmup_matches: number of earliest matches (chronological) to use only for rating burn-in.
+    min_player_matches: drop matches where either player has fewer than this many prior matches.
+    """
     df = raw_data.copy().reset_index(drop=True)
     
     # Ensure chronological order to prevent data leakage
@@ -38,6 +43,7 @@ def generate_features(raw_data):
     total_matches_p2 = []
     days_since_last_p1 = []
     days_since_last_p2 = []
+    warmup_flags = []
 
     for _, row in df.iterrows():
         p1 = row['player_1']
@@ -75,6 +81,14 @@ def generate_features(raw_data):
         total_matches_p2.append(history_features['total_matches_p2'])
         days_since_last_p1.append(history_features['days_since_last_p1'])
         days_since_last_p2.append(history_features['days_since_last_p2'])
+        
+        # Flag rows to drop from training while still updating state for burn-in
+        warmup = (
+            len(warmup_flags) < warmup_matches
+            or history_features['total_matches_p1'] < min_player_matches
+            or history_features['total_matches_p2'] < min_player_matches
+        )
+        warmup_flags.append(warmup)
 
         elo_processor.update_ratings(p1, p2, surf, p1_won)
         history_processor.update_match_history(p1, p2, match_date, p1_won)
@@ -110,5 +124,8 @@ def generate_features(raw_data):
         df.insert(target_idx, name, data)
         target_idx += 1
 
-    df.to_csv("data/processed/with_features.csv", index=False)
-    return df
+    warmup_mask = pd.Series(warmup_flags, index=df.index)
+    df_filtered = df.loc[~warmup_mask].reset_index(drop=True)
+
+    df_filtered.to_csv("data/processed/with_features.csv", index=False)
+    return df_filtered
