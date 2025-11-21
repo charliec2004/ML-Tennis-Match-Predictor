@@ -204,7 +204,7 @@ def save_splits(splits: Dict[str, Any], out_dir: str) -> None:
     
     feature_file = out_path / "feature_names.txt"
     with open(feature_file, 'w') as f:
-        f.write("X Feature columns (excluding MATCH_ID)\n")
+        f.write("# X Feature columns (excluding MATCH_ID)\n")
         for col in x_cols:
             f.write(f"{col}\n")
     

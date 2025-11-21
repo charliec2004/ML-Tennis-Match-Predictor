@@ -29,7 +29,13 @@ def load_splits() -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, np.ndarray,
     y_test = np.asarray(pd.read_csv("data/processed/splits/y_test.csv")["target"])
     
     with open("data/processed/splits/feature_names.txt", 'r') as f:
-        feature_names = [line.strip() for line in f if not line.startswith('#') and line.strip()]
+        feature_names = [
+            line.strip()
+            for line in f
+            if line.strip()
+            and not line.lstrip().startswith('#')
+            and "Feature columns" not in line
+        ]
     
     print(f"   Train: {X_train.shape[0]:,} matches")
     print(f"   Valid: {X_val.shape[0]:,} matches")
