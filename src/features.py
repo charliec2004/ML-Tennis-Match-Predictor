@@ -5,6 +5,10 @@ from matches.match_history_processor import MatchHistoryProcessor
 def generate_features(raw_data):
     """Generate ELO and match history features using class-based processors"""
     df = raw_data.copy().reset_index(drop=True)
+    
+    # Ensure chronological order to prevent data leakage
+    df['date'] = pd.to_datetime(df['date'])
+    df = df.sort_values('date').reset_index(drop=True)
 
     elo_processor = EloProcessor()
     history_processor = MatchHistoryProcessor()
