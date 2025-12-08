@@ -19,3 +19,4 @@ six==1.17.0
 threadpoolctl==3.6.0
 tzdata==2025.2
 xgboost==3.0.4
+python-dotenv
