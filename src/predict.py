@@ -124,7 +124,12 @@ def make_predictions(features_df: pd.DataFrame, model_path: str = "data/outputs/
         print(f"   Expected: ({len(features_df)}, {len(feature_names)})")
         
         if X_features.isnull().any().any():
-            print("   NaN values found, imputing with median...")
+            missing_counts = X_features.isnull().sum()
+            missing_cols = missing_counts[missing_counts > 0]
+            total_missing = int(missing_counts.sum())
+            print(f"   NaN values found ({total_missing} total) across {len(missing_cols)} columns:")
+            print(f"      {missing_cols.to_dict()}")
+            print("   Imputing with median...")
             from sklearn.impute import SimpleImputer
             
             all_nan_cols = X_features.columns[X_features.isnull().all()]
