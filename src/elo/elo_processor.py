@@ -50,8 +50,25 @@ class EloProcessor:
         
         return key, False
     
+    def _ensure_player(self, player_name: str):
+        """Add a new player with default ratings if they are missing."""
+        if player_name in self.master_elo:
+            return
+        # If player is only missing due to case mismatch, _case_insensitive_lookup will handle it.
+        _, found = self._case_insensitive_lookup(self.master_elo, player_name)
+        if found:
+            return
+        # Initialize across all rating dictionaries
+        self.master_elo[player_name] = 1500.0
+        self.surf_hard_elo[player_name] = 1500.0
+        self.surf_grass_elo[player_name] = 1500.0
+        self.surf_clay_elo[player_name] = 1500.0
+        self.surf_carpet_elo[player_name] = 1500.0
+    
     def _get_player_rating(self, rating_dict: Dict[str, float], player_name: str) -> float:
         """Get rating from dictionary with case-insensitive fallback"""
+        # Ensure unseen players are initialized so inference does not crash
+        self._ensure_player(player_name)
         actual_key, found = self._case_insensitive_lookup(rating_dict, player_name)
         if found:
             return rating_dict[actual_key]

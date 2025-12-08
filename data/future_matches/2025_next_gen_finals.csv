@@ -1,0 +1,20 @@
+date,player_1,player_2,surface,tournament,round,best_of,series,court,rank_1,rank_2
+2025-12-17,Mensik J.,Tien L.,Hard,Next Gen ATP Finals,Group,5,ATP Next Gen,Indoor,32,45
+2025-12-17,Prizmic D.,Landaluce M.,Hard,Next Gen ATP Finals,Group,5,ATP Next Gen,Indoor,68,74
+2025-12-17,Blockx A.,Jouan R.,Hard,Next Gen ATP Finals,Group,5,ATP Next Gen,Indoor,59,88
+2025-12-17,Basavareddy N.,Budkov Kjaer N.,Hard,Next Gen ATP Finals,Group,5,ATP Next Gen,Indoor,101,112
+
+2025-12-18,Mensik J.,Prizmic D.,Hard,Next Gen ATP Finals,Group,5,ATP Next Gen,Indoor,32,68
+2025-12-18,Tien L.,Landaluce M.,Hard,Next Gen ATP Finals,Group,5,ATP Next Gen,Indoor,45,74
+2025-12-18,Blockx A.,Basavareddy N.,Hard,Next Gen ATP Finals,Group,5,ATP Next Gen,Indoor,59,101
+2025-12-18,Jouan R.,Budkov Kjaer N.,Hard,Next Gen ATP Finals,Group,5,ATP Next Gen,Indoor,88,112
+
+2025-12-19,Mensik J.,Landaluce M.,Hard,Next Gen ATP Finals,Group,5,ATP Next Gen,Indoor,32,74
+2025-12-19,Tien L.,Prizmic D.,Hard,Next Gen ATP Finals,Group,5,ATP Next Gen,Indoor,45,68
+2025-12-19,Blockx A.,Budkov Kjaer N.,Hard,Next Gen ATP Finals,Group,5,ATP Next Gen,Indoor,59,112
+2025-12-19,Jouan R.,Basavareddy N.,Hard,Next Gen ATP Finals,Group,5,ATP Next Gen,Indoor,88,101
+
+2025-12-20,Mensik J.,Blockx A.,Hard,Next Gen ATP Finals,SF,5,ATP Next Gen,Indoor,32,59
+2025-12-20,Tien L.,Prizmic D.,Hard,Next Gen ATP Finals,SF,5,ATP Next Gen,Indoor,45,68
+
+2025-12-21,Mensik J.,Tien L.,Hard,Next Gen ATP Finals,Final,5,ATP Next Gen,Indoor,32,45

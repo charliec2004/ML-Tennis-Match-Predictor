@@ -14,6 +14,117 @@ from pathlib import Path
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 from features import generate_features
+from elo.elo_processor import EloProcessor
+from matches.match_history_processor import MatchHistoryProcessor
+
+# Lightweight copies of mapping helpers to avoid pulling full prepare_raw (which requires kagglehub)
+SERIES_LEVEL = {
+    "Grand Slam": 6,
+    "Masters 1000": 5,
+    "Masters": 3,
+    "Masters Cup": 4,
+    "ATP Next Gen": 2,
+    "International": 0,
+    "International Gold": 1,
+    "ATP250": 1,
+    "ATP500": 2,
+}
+
+ROUND_MAP = {
+    "Qualifying": 0,
+    "Qualification": 0,
+    "Round Robin": 0,
+    "Rr": 0,
+    "Group Stage": 0,
+    "Group": 0,
+    "1st Round": 1,
+    "First Round": 1,
+    "2nd Round": 2,
+    "Second Round": 2,
+    "3rd Round": 3,
+    "Third Round": 3,
+    "4th Round": 4,
+    "Fourth Round": 4,
+    "R16": 5,
+    "Round Of 16": 5,
+    "Round-Of-16": 5,
+    "R32": 4,
+    "Round Of 32": 4,
+    "R64": 3,
+    "Round Of 64": 3,
+    "R128": 2,
+    "Round Of 128": 2,
+    "Q1": 1,
+    "Q2": 1,
+    "Q3": 1,
+    "Quarterfinal": 6,
+    "Semi-Final": 7,
+    "Semi": 7,
+    "Semifinal": 7,
+    "Semi-Finals": 7,
+    "Semi-Final": 7,
+    "Sf": 7,
+    "Final": 8,
+    "F": 8,
+}
+
+
+def _series_level(series: str) -> Optional[int]:
+    """Map series label to numeric level; return None if unknown."""
+    if pd.isna(series):
+        return None
+    normalized = series.strip().title()
+    if normalized.lower().startswith("atp"):
+        normalized = "ATP" + normalized[3:]
+    if "Atp250" in normalized or normalized == "Atp250":
+        normalized = "ATP250"
+    if "Atp500" in normalized or normalized == "Atp500":
+        normalized = "ATP500"
+    return SERIES_LEVEL.get(normalized)
+
+
+def _map_round(raw_round: str) -> Optional[int]:
+    """Map round labels to an ordered numeric scale used in training."""
+    if pd.isna(raw_round):
+        return None
+    raw = str(raw_round).strip()
+    if not raw:
+        return None
+    normalized = raw.title()
+    if normalized.lower() in {"sf", "semi", "semifinal", "semi-finals", "semi-final"}:
+        normalized = "Semifinal"
+    elif normalized.lower() in {"qf", "quarterfinal", "quarter-final"}:
+        normalized = "Quarterfinal"
+    elif normalized.lower() in {"r16", "round of 16", "round-of-16"}:
+        normalized = "R16"
+    elif normalized.lower() in {"r32", "round of 32"}:
+        normalized = "R32"
+    elif normalized.lower() in {"r64", "round of 64"}:
+        normalized = "R64"
+    elif normalized.lower() in {"r128", "round of 128"}:
+        normalized = "R128"
+    elif normalized.lower() in {"q1", "q2", "q3", "qualifying"}:
+        normalized = "Qualifying"
+    elif normalized.lower() in {"1st round", "1 st round"}:
+        normalized = "1st Round"
+    elif normalized.lower() in {"2nd round", "2 nd round"}:
+        normalized = "2nd Round"
+    elif normalized.lower() in {"3rd round", "3 rd round"}:
+        normalized = "3rd Round"
+    elif normalized.lower() in {"4th round", "4 th round"}:
+        normalized = "4th Round"
+    return ROUND_MAP.get(normalized)
+
+
+def _surface_flags(surface: str) -> Tuple[int, int, int, int, int]:
+    """Return surf_fast, surf_hard, surf_clay, surf_grass, surf_carpet flags."""
+    surf = (surface or "").strip().title()
+    surf_hard = int(surf == "Hard")
+    surf_clay = int(surf == "Clay")
+    surf_grass = int(surf == "Grass")
+    surf_carpet = int(surf == "Carpet")
+    surf_fast = int(surf_hard or surf_grass)
+    return surf_fast, surf_hard, surf_clay, surf_grass, surf_carpet
 
 
 def load_trained_model(model_path: str = "data/outputs/model_xgb.json") -> Tuple[xgb.Booster, List[str]]:
@@ -96,6 +207,43 @@ def prepare_match_data(matches_df: pd.DataFrame, interactive_resolution: bool = 
         known_players = load_known_players()
         for col in ["player_1", "player_2"]:
             matches_prep[col] = matches_prep[col].apply(lambda n: resolve_player_name(str(n), known_players))
+
+    # Normalize categorical inputs so they mirror training-time preprocessing
+    matches_prep["surface"] = matches_prep["surface"].apply(lambda s: s.title() if isinstance(s, str) else s)
+    matches_prep["series"] = matches_prep.get("series", pd.Series([None] * len(matches_prep))).apply(
+        lambda s: s.strip().title() if isinstance(s, str) else s
+    )
+    matches_prep["series_level"] = matches_prep["series"].apply(_series_level)
+
+    matches_prep["round"] = matches_prep.get("round", pd.Series([None] * len(matches_prep))).apply(_map_round)
+
+    if "best_of" not in matches_prep:
+        matches_prep["best_of"] = 3  # default to best-of-3 if unspecified
+    matches_prep["best_of_3"] = (matches_prep["best_of"].astype(str).str.strip() == "3").astype(int)
+    matches_prep["best_of_5"] = (matches_prep["best_of"].astype(str).str.strip() == "5").astype(int)
+
+    matches_prep["court"] = matches_prep.get("court", pd.Series(["Outdoor"] * len(matches_prep))).apply(
+        lambda s: s.title() if isinstance(s, str) else s
+    )
+    matches_prep["is_outdoor"] = (matches_prep["court"].str.lower() == "outdoor").astype(int)
+
+    surf_flags = matches_prep["surface"].apply(_surface_flags)
+    matches_prep[["surf_fast", "surf_hard", "surf_clay", "surf_grass", "surf_carpet"]] = pd.DataFrame(
+        surf_flags.tolist(), index=matches_prep.index
+    )
+
+    # Ranking-derived features (robust to missing rankings)
+    matches_prep["rank_1"] = pd.to_numeric(matches_prep.get("rank_1", np.nan), errors="coerce")
+    matches_prep["rank_2"] = pd.to_numeric(matches_prep.get("rank_2", np.nan), errors="coerce")
+    matches_prep.loc[matches_prep["rank_1"] <= 0, "rank_1"] = np.nan
+    matches_prep.loc[matches_prep["rank_2"] <= 0, "rank_2"] = np.nan
+    matches_prep["rank_avg"] = (matches_prep["rank_1"] + matches_prep["rank_2"]) / 2
+    matches_prep["rank_ratio"] = matches_prep["rank_1"] / matches_prep["rank_2"]
+    matches_prep["rank_diff"] = matches_prep["rank_1"] - matches_prep["rank_2"]
+    matches_prep["rank_ratio"] = matches_prep["rank_ratio"].replace([np.inf, -np.inf], np.nan)
+    matches_prep["is_top10_match"] = (
+        (matches_prep["rank_1"] <= 10) & (matches_prep["rank_2"] <= 10)
+    ).fillna(False).astype(int)
     
     if 'winner' not in matches_prep.columns:
         matches_prep['winner'] = matches_prep['player_1']
@@ -104,8 +252,43 @@ def prepare_match_data(matches_df: pd.DataFrame, interactive_resolution: bool = 
     
     matches_prep['date'] = pd.to_datetime(matches_prep['date'])
     
+    # Seed historical state so features reflect real past performance
+    history_path = Path("data/raw/tennis-master-data.csv")
+    elo_proc = EloProcessor()
+    history_proc = MatchHistoryProcessor()
+    if history_path.exists():
+        print(f"   Loading historical matches from {history_path} to seed ratings...")
+        hist_df = pd.read_csv(history_path, usecols=[
+            "date",
+            "player_1",
+            "player_2",
+            "surface",
+            "target",
+        ])
+        hist_df["date"] = pd.to_datetime(hist_df["date"])
+        hist_df = hist_df.sort_values("date")
+        for _, row in hist_df.iterrows():
+            elo_proc.update_ratings(row["player_1"], row["player_2"], row["surface"], row["target"] == 0)
+            history_proc.update_match_history(
+                row["player_1"],
+                row["player_2"],
+                row["date"].date(),
+                row["target"] == 0,
+            )
+        print(f"   Seeded ratings from {len(hist_df):,} historical matches")
+    else:
+        print("   Warning: historical ratings not seeded (data/raw/tennis-master-data.csv missing)")
+
     print("   Generating ELO and match history features...")
-    features_df = generate_features(matches_prep)
+    # For inference do not drop rows and do not let future rows mutate state
+    features_df = generate_features(
+        matches_prep,
+        warmup_matches=0,
+        min_player_matches=0,
+        elo_processor=elo_proc,
+        history_processor=history_proc,
+        update_state=False,
+    )
     
     print(f"   Features generated for {len(features_df)} matches")
     return features_df
@@ -130,19 +313,13 @@ def make_predictions(features_df: pd.DataFrame, model_path: str = "data/outputs/
             print(f"   NaN values found ({total_missing} total) across {len(missing_cols)} columns:")
             print(f"      {missing_cols.to_dict()}")
             print("   Imputing with median...")
-            from sklearn.impute import SimpleImputer
-            
             all_nan_cols = X_features.columns[X_features.isnull().all()]
+            medians = X_features.median(numeric_only=True)
+            X_features_imputed = X_features.copy()
             if len(all_nan_cols) > 0:
                 print(f"   Filling all-NaN columns with 0: {list(all_nan_cols)}")
-                X_features[all_nan_cols] = 0
-            
-            imputer = SimpleImputer(strategy='median')
-            X_features_imputed = pd.DataFrame(
-                imputer.fit_transform(X_features), 
-                columns=X_features.columns, 
-                index=X_features.index
-            )
+                X_features_imputed[all_nan_cols] = 0
+            X_features_imputed = X_features_imputed.fillna(medians)
         else:
             X_features_imputed = X_features
         

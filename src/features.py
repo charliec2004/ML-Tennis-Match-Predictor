@@ -3,11 +3,20 @@ from elo.elo_processor import EloProcessor
 from matches.match_history_processor import MatchHistoryProcessor
 
 
-def generate_features(raw_data, warmup_matches: int = 2000, min_player_matches: int = 5):
+def generate_features(
+    raw_data,
+    warmup_matches: int = 2000,
+    min_player_matches: int = 5,
+    elo_processor: EloProcessor | None = None,
+    history_processor: MatchHistoryProcessor | None = None,
+    update_state: bool = True,
+):
     """
     Generate ELO and match history features using class-based processors.
     warmup_matches: number of earliest matches (chronological) to use only for rating burn-in.
     min_player_matches: drop matches where either player has fewer than this many prior matches.
+    elo_processor/history_processor: allow seeding with historical state for inference.
+    update_state: when False, do not update ratings/history after each row (keeps state static).
     """
     df = raw_data.copy().reset_index(drop=True)
     
@@ -15,8 +24,8 @@ def generate_features(raw_data, warmup_matches: int = 2000, min_player_matches: 
     df['date'] = pd.to_datetime(df['date'])
     df = df.sort_values('date').reset_index(drop=True)
 
-    elo_processor = EloProcessor()
-    history_processor = MatchHistoryProcessor()
+    elo_processor = elo_processor or EloProcessor()
+    history_processor = history_processor or MatchHistoryProcessor()
 
     elo_p1 = []
     elo_p2 = []
@@ -90,8 +99,9 @@ def generate_features(raw_data, warmup_matches: int = 2000, min_player_matches: 
         )
         warmup_flags.append(warmup)
 
-        elo_processor.update_ratings(p1, p2, surf, p1_won)
-        history_processor.update_match_history(p1, p2, match_date, p1_won)
+        if update_state:
+            elo_processor.update_ratings(p1, p2, surf, p1_won)
+            history_processor.update_match_history(p1, p2, match_date, p1_won)
 
     target_idx = df.columns.get_loc('target')
     
