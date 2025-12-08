@@ -19,3 +19,5 @@ data/processed/splits/*
 player_db.csv
 tennis-master-data.csv
 atp_tennis.csv
+
+.env
