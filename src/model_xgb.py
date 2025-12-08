@@ -185,32 +185,9 @@ def analyze_feature_importance(model: xgb.Booster, feature_names: List[str], top
     return importance_df
 
 
-def plot_training_curves(evals_result: Dict[str, Any], output_dir: str = "data/outputs") -> None:
-    """Plot training and validation curves."""
-    
-    Path(output_dir).mkdir(parents=True, exist_ok=True)
-    
-    train_logloss = evals_result['train']['logloss']
-    val_logloss = evals_result['eval']['logloss']
-    
-    plt.figure(figsize=(10, 6))
-    plt.plot(train_logloss, label='Training Log Loss', color='blue')
-    plt.plot(val_logloss, label='Validation Log Loss', color='red')
-    plt.xlabel('Boosting Rounds')
-    plt.ylabel('Log Loss')
-    plt.title('XGBoost Training Curves')
-    plt.legend()
-    plt.grid(True, alpha=0.3)
-    
-    plot_path = Path(output_dir) / "training_curves.png"
-    plt.savefig(plot_path, dpi=300, bbox_inches='tight')
-    plt.close()
-    
-    print(f"   Training curves saved to {plot_path}")
-
-
 def save_model_and_results(model: xgb.Booster, feature_names: List[str], results: Dict[str, Any], 
-                          importance_df: pd.DataFrame, output_dir: str = "data/outputs") -> None:
+                          importance_df: pd.DataFrame, output_dir: str = "data/outputs",
+                          evals_result: Dict[str, Any] | None = None) -> None:
     """Save trained model and results."""
     
     output_path = Path(output_dir)
@@ -237,6 +214,12 @@ def save_model_and_results(model: xgb.Booster, feature_names: List[str], results
     importance_path = output_path / "feature_importance.csv"
     importance_df.to_csv(importance_path, index=False)
     print(f"   Feature importance saved to {importance_path}")
+
+    if evals_result is not None:
+        evals_path = output_path / "evals_result.json"
+        with open(evals_path, "w") as f:
+            json.dump(evals_result, f)
+        print(f"   Training evals saved to {evals_path}")
 
 
 def train_xgboost_pipeline() -> Tuple[xgb.Booster, Dict[str, Any]]:
@@ -265,11 +248,8 @@ def train_xgboost_pipeline() -> Tuple[xgb.Booster, Dict[str, Any]]:
         
         importance_df = analyze_feature_importance(model, feature_names)
         
-        print(f"\nCreating visualizations...")
-        plot_training_curves(evals_result)
-        
         print(f"\nSaving model and results...")
-        save_model_and_results(model, feature_names, results, importance_df)
+        save_model_and_results(model, feature_names, results, importance_df, evals_result=evals_result)
         
         val_auc = results['val']['auc']
         test_auc = results['test']['auc']

@@ -142,6 +142,46 @@ def predict_future_matches_interactive() -> None:
         print(f"   Check your CSV file format and try again.")
 
 
+def generate_graphs() -> None:
+    """Generate presentation graphs after pipeline completes."""
+    print("\n\033[1;34mStep 7: Generating graphs\033[0m")
+    try:
+        (Path("data/outputs/graphs")).mkdir(parents=True, exist_ok=True)
+        from graphs.performance_over_time import generate as perf_over_time
+        from graphs.feature_importance_plot import generate as feat_imp
+        from graphs.calibration_curve_plot import generate as calib
+        from graphs.confidence_histogram import generate as conf_hist
+        from graphs.confusion_threshold import generate as conf_thr
+        from graphs.elo_trajectories import generate as elo_traj
+        from graphs.upset_analysis import generate as upset
+        from graphs.surface_round_breakdown import generate as surf_round
+        from graphs.training_curves_plot import generate as train_curves
+
+        generators = [
+            ("performance_over_time", perf_over_time),
+            ("feature_importance", feat_imp),
+            ("calibration_curve", calib),
+            ("confidence_histogram", conf_hist),
+            ("confusion_threshold", conf_thr),
+            ("elo_trajectories", elo_traj),
+            ("upset_analysis", upset),
+            ("surface_round_breakdown", surf_round),
+            ("training_curves", train_curves),
+        ]
+
+        for name, func in generators:
+            try:
+                if name in {"calibration_curve", "confidence_histogram", "confusion_threshold", "upset_analysis", "surface_round_breakdown"}:
+                    func(split="test")
+                else:
+                    func()
+            except Exception as e:
+                print(f"   Warning: failed to generate {name}: {e}")
+        print("   ✓ Graphs generated in data/outputs/graphs/")
+    except Exception as e:
+        print(f"   ✗ Error during graph generation: {e}")
+
+
 def main() -> Optional[dict]:
     """
     Complete pipeline: Load raw data -> Generate features -> Create time-based splits -> Train XGBoost -> Predict Future
@@ -226,6 +266,7 @@ def main() -> Optional[dict]:
         print(f"   You can still train manually with: python src/model_xgb.py")
     
     predict_future_matches_interactive()
+    generate_graphs()
     
     print("\n" + "=" * 50)
     print("COMPLETE PIPELINE FINISHED!")
