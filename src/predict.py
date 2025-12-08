@@ -178,7 +178,10 @@ def resolve_player_name(name: str, known: List[str]) -> str:
                 if choice_int == 0:
                     return name
                 if 1 <= choice_int <= len(suggestions):
-                    return suggestions[choice_int - 1]
+                    chosen = suggestions[choice_int - 1]
+                    if chosen != name:
+                        print(f"   Using '{chosen}' instead of '{name}'")
+                    return chosen
             print("Please enter 0 or a valid suggestion number.")
     return name
 
@@ -257,6 +260,7 @@ def prepare_match_data(matches_df: pd.DataFrame, interactive_resolution: bool = 
     elo_proc = EloProcessor()
     history_proc = MatchHistoryProcessor()
     if history_path.exists():
+        min_future_date = pd.to_datetime(matches_prep["date"]).min()
         print(f"   Loading historical matches from {history_path} to seed ratings...")
         hist_df = pd.read_csv(history_path, usecols=[
             "date",
@@ -266,16 +270,19 @@ def prepare_match_data(matches_df: pd.DataFrame, interactive_resolution: bool = 
             "target",
         ])
         hist_df["date"] = pd.to_datetime(hist_df["date"])
-        hist_df = hist_df.sort_values("date")
-        for _, row in hist_df.iterrows():
-            elo_proc.update_ratings(row["player_1"], row["player_2"], row["surface"], row["target"] == 0)
-            history_proc.update_match_history(
-                row["player_1"],
-                row["player_2"],
-                row["date"].date(),
-                row["target"] == 0,
-            )
-        print(f"   Seeded ratings from {len(hist_df):,} historical matches")
+        hist_df = hist_df[hist_df["date"] < min_future_date].sort_values("date")
+        if hist_df.empty:
+            print("   Warning: no historical rows before future match dates; seeding skipped")
+        else:
+            for _, row in hist_df.iterrows():
+                elo_proc.update_ratings(row["player_1"], row["player_2"], row["surface"], row["target"] == 0)
+                history_proc.update_match_history(
+                    row["player_1"],
+                    row["player_2"],
+                    row["date"].date(),
+                    row["target"] == 0,
+                )
+            print(f"   Seeded ratings from {len(hist_df):,} historical matches (< {min_future_date.date()})")
     else:
         print("   Warning: historical ratings not seeded (data/raw/tennis-master-data.csv missing)")
 
@@ -348,7 +355,8 @@ def make_predictions(features_df: pd.DataFrame, model_path: str = "data/outputs/
         results_df = features_df[['date', 'player_1', 'player_2']].copy()
         results_df['prob_p1_wins'] = 1 - predictions  # predictions is P(player_2 wins)
         results_df['prob_p2_wins'] = predictions
-        results_df['predicted_winner'] = np.where(predictions > 0.5, results_df['player_1'], results_df['player_2'])
+        # If P(player_2 wins) > 0.5, pick player_2; otherwise player_1
+        results_df['predicted_winner'] = np.where(predictions > 0.5, results_df['player_2'], results_df['player_1'])
         results_df['confidence'] = np.maximum(predictions, 1 - predictions)
         
         print(f"   Predictions generated for {len(results_df)} matches")
