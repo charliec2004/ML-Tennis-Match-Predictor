@@ -177,15 +177,22 @@ def fetch_latest_dataset() -> pd.DataFrame:
     print("FETCHING LATEST DATASET FROM KAGGLE")
     print("="*60)
     print(f"Dataset: {KAGGLE_DATASET}")
-    print("Downloading latest version...")
+    print("\n" + "🚀" * 30)
+    print("🎾 ATTEMPTING TO FETCH DATA FROM KAGGLE API...")
+    print("🚀" * 30)
+    print(f"📡 Connecting to Kaggle dataset: {KAGGLE_DATASET}")
+    print("⏳ This may take a moment...\n")
     
     try:
         # First, let's download the dataset and see what files are available
         import kagglehub
         
         # Download the dataset to local cache
+        print("📥 Downloading dataset...")
         path = kagglehub.dataset_download(KAGGLE_DATASET)
-        print(f"✓ Dataset downloaded to: {path}")
+        print("\n" + "✅" * 30)
+        print(f"🎉 SUCCESS! Dataset downloaded to: {path}")
+        print("✅" * 30 + "\n")
         
         # List all CSV files in the downloaded dataset
         from pathlib import Path
@@ -204,7 +211,9 @@ def fetch_latest_dataset() -> pd.DataFrame:
         print(f"\n✓ Loading largest file: {largest_csv.name}")
         
         df = pd.read_csv(largest_csv)
-        print(f"✓ Successfully loaded {len(df):,} matches")
+        print("\n" + "🏆" * 30)
+        print(f"💥 SUCCESSFULLY LOADED {len(df):,} MATCHES! 💥")
+        print("🏆" * 30 + "\n")
         
         # Try to infer date range if 'Date' column exists
         if 'Date' in df.columns:
@@ -217,11 +226,15 @@ def fetch_latest_dataset() -> pd.DataFrame:
         
         return df
     except Exception as e:
-        print(f"✗ Error fetching dataset: {e}")
-        print("\nMake sure you have:")
+        print("\n" + "❌" * 30)
+        print("💀 KAGGLE FETCH FAILED! 💀")
+        print("❌" * 30)
+        print(f"\n🔥 Error: {e}\n")
+        print("⚠️  Make sure you have:")
         print("  1. Installed kagglehub: pip install 'kagglehub[pandas-datasets]'")
-        print("  2. Set up Kaggle API credentials (~/.kaggle/kaggle.json)")
+        print("  2. Set up Kaggle API credentials (KAGGLE_API_TOKEN in .env or ~/.kaggle/kaggle.json)")
         print("  3. Accepted the dataset terms at: https://www.kaggle.com/datasets/dissfya/atp-tennis-2000-2023daily-pull")
+        print("\n" + "❌" * 30 + "\n")
         raise
 
 

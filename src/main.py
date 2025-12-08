@@ -5,6 +5,9 @@ from pathlib import Path
 from typing import Optional
 from features import generate_features
 from timesplits import make_splits, save_splits
+from dotenv import load_dotenv
+
+load_dotenv()
 
 def ask_predict_future_matches() -> bool:
     """Ask user if they want to predict future matches with input validation."""
@@ -70,7 +73,7 @@ def select_match_file(csv_files: list[str]) -> Optional[str]:
 
 def predict_future_matches_interactive() -> None:
     """Interactive future match prediction with error handling."""
-    print("\nStep 6: Future Match Predictions")
+    print("\n\033[1;34mStep 6: Future Match Predictions\033[0m")
     print("-" * 50)
     
     future_matches_dir = Path("data/future_matches")
@@ -151,7 +154,7 @@ def main() -> Optional[dict]:
     splits = None
 
     # Step 0: Fetch latest dataset from Kaggle API and build master data
-    print("\nStep 0: Fetching latest dataset from Kaggle and preparing master data...")
+    print("\n\033[1;34mStep 0: Fetching latest dataset from Kaggle and preparing master data...\033[0m")
     try:
         from prepare_raw import build_master, update_players_db
         df_master = build_master()
@@ -163,7 +166,7 @@ def main() -> Optional[dict]:
         print(f"   And Kaggle API credentials are set up (~/.kaggle/kaggle.json)")
         return None
     
-    print("\nStep 1: Loading raw data...")
+    print("\n\033[1;34mStep 1: Loading raw data...\033[0m")
     try:
         raw = pd.read_csv("data/raw/tennis-master-data.csv")
         print(f"   Loaded {len(raw):,} raw matches")
@@ -172,7 +175,7 @@ def main() -> Optional[dict]:
         print("   Please ensure the raw data file exists.")
         return None
     
-    print("\nStep 2: Generating features...")
+    print("\n\033[1;34mStep 2: Generating features...\033[0m")
     try:
         df_feat = generate_features(raw)
         print(f"   Features generated! Shape: {df_feat.shape}")
@@ -181,7 +184,7 @@ def main() -> Optional[dict]:
         print(f"   Error generating features: {e}")
         return None
     
-    print("\nStep 3: Creating time-based splits...")
+    print("\n\033[1;34mStep 3: Creating time-based splits...\033[0m")
     try:
         df_feat['date'] = pd.to_datetime(df_feat['date'])
         
@@ -199,7 +202,7 @@ def main() -> Optional[dict]:
         print(f"   Error creating splits: {e}")
         return None
     
-    print("\nStep 4: Saving splits...")
+    print("\n\033[1;34mStep 4: Saving splits...\033[0m")
     try:
         save_splits(splits, "data/processed/splits")
         
@@ -207,7 +210,7 @@ def main() -> Optional[dict]:
         print(f"   Error saving splits: {e}")
         return None
     
-    print("\nStep 5: Training XGBoost Model...")
+    print("\n\033[1;34mStep 5: Training XGBoost Model...\033[0m")
     model_results = None
     try:
         from model_xgb import train_xgboost_pipeline
