@@ -149,12 +149,28 @@ def make_predictions(features_df: pd.DataFrame, model_path: str = "data/outputs/
         print(f"   Final feature matrix shape: {X_features_imputed.shape}")
         assert X_features_imputed.shape[1] == len(feature_names), f"Shape mismatch: {X_features_imputed.shape[1]} vs {len(feature_names)}"
         
-        dmatrix = xgb.DMatrix(X_features_imputed, feature_names=feature_names)
-        predictions = model.predict(dmatrix)
+        # Use both-ways prediction to remove position bias
+        print("   Making predictions (averaging both player orderings)...")
+        from data_augmentation import predict_both_ways
+        
+        # Create a simple wrapper that has predict_proba method for compatibility
+        class XGBoostWrapper:
+            def __init__(self, booster, feature_names):
+                self.booster = booster
+                self.feature_names = feature_names
+            
+            def predict_proba(self, X):
+                dmatrix = xgb.DMatrix(X, feature_names=self.feature_names)
+                preds = self.booster.predict(dmatrix)
+                # Return shape (n_samples, 2) for binary classification
+                return np.column_stack([1 - preds, preds])
+        
+        model_wrapper = XGBoostWrapper(model, feature_names)
+        predictions = predict_both_ways(model_wrapper, X_features_imputed, feature_names)
         
         results_df = features_df[['date', 'player_1', 'player_2']].copy()
-        results_df['prob_p1_wins'] = predictions
-        results_df['prob_p2_wins'] = 1 - predictions
+        results_df['prob_p1_wins'] = 1 - predictions  # predictions is P(player_2 wins)
+        results_df['prob_p2_wins'] = predictions
         results_df['predicted_winner'] = np.where(predictions > 0.5, results_df['player_1'], results_df['player_2'])
         results_df['confidence'] = np.maximum(predictions, 1 - predictions)
         

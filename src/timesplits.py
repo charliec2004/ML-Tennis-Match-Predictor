@@ -94,10 +94,13 @@ def make_splits(
     meta_cols: Optional[List[str]] = None,
     y_col: str = "target",
     train_end: str = "2018-12-31",
-    val_end: str = "2022-12-31"
+    val_end: str = "2022-12-31",
+    augment_train: bool = True,
+    augment_seed: int = 42
 ) -> Dict[str, Any]:
     """
     Orchestrate the complete splitting process: sort, split columns, create masks, slice.
+    Optionally augments training data by randomly swapping player positions.
     
     Args:
         df: Input DataFrame with all features
@@ -106,6 +109,8 @@ def make_splits(
         y_col: Target column name
         train_end: End date for training (inclusive)
         val_end: End date for validation (inclusive)
+        augment_train: Whether to augment training data by swapping player positions
+        augment_seed: Random seed for augmentation
         
     Returns:
         Dictionary with train/val/test splits and feature column names
@@ -123,6 +128,11 @@ def make_splits(
     
     df_sorted = df.sort_values([date_col, "MATCH_ID"], ascending=True).reset_index(drop=True)
     print(f"   Sorted {len(df_sorted):,} matches chronologically")
+    
+    # Apply data augmentation to remove player position bias
+    if augment_train:
+        from data_augmentation import augment_training_data
+        df_sorted = augment_training_data(df_sorted, seed=augment_seed)
     
     meta_df, X_df, y_df, x_feature_names = split_columns(df_sorted, meta_cols, y_col)
     print(f"   Split into {len(x_feature_names)} features (excluding MATCH_ID)")

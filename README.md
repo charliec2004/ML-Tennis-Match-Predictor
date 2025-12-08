@@ -37,6 +37,16 @@ This system addresses these challenges through:
 - **Time-based training splits** that prevent data leakage and simulate real-world prediction scenarios
 - **Historical match patterns** including win rates and recent form
 - **Head-to-head statistics** for player matchup analysis
+- **Position-invariant training** via data augmentation to eliminate player column bias
+
+### Handling Player Position Bias
+
+The model uses **data augmentation** to prevent learning spurious patterns based on which column a player appears in:
+
+1. **During Training**: Randomly swaps player_1 and player_2 positions for 50% of matches, flipping all directional features (ELO diff, rank diff, etc.) and the target label
+2. **During Prediction**: Makes predictions in both player orderings and averages the probabilities for more robust results
+
+This ensures the model learns position-invariant patterns and prevents it from learning "player_1 tends to win more often" if there's any recording bias in the source data.
 
 ### Performance Context
 
