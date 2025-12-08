@@ -8,6 +8,8 @@ import pandas as pd
 import numpy as np
 import xgboost as xgb
 import json
+import sys
+import difflib
 from pathlib import Path
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple
@@ -31,7 +33,46 @@ def load_trained_model(model_path: str = "data/outputs/model_xgb.json") -> Tuple
     return model, feature_names
 
 
-def prepare_match_data(matches_df: pd.DataFrame) -> pd.DataFrame:
+def load_known_players(players_db: Path = Path("data/raw/players_db.csv")) -> List[str]:
+    """Load known player names from players_db.csv."""
+    if not players_db.exists():
+        return []
+    df = pd.read_csv(players_db)
+    col = df.columns[0]
+    return [p.strip() for p in df[col].dropna() if str(p).strip()]
+
+
+def resolve_player_name(name: str, known: List[str]) -> str:
+    """Resolve an unknown player name by asking the user to pick a closest match."""
+    if not known:
+        return name
+    # Exact (case-insensitive) match
+    for k in known:
+        if k.lower() == name.lower():
+            return k
+    # Suggest closest names
+    suggestions = difflib.get_close_matches(name, known, n=3, cutoff=0.6)
+    if not sys.stdin.isatty():
+        # Non-interactive: fall back to original to avoid blocking
+        return name
+    if suggestions:
+        print(f"Unknown player '{name}'. Did you mean:")
+        for idx, s in enumerate(suggestions, 1):
+            print(f"   {idx}. {s}")
+        print("   0. Keep as-is (may fail if truly unknown)")
+        while True:
+            choice = input("Select a number: ").strip()
+            if choice.isdigit():
+                choice_int = int(choice)
+                if choice_int == 0:
+                    return name
+                if 1 <= choice_int <= len(suggestions):
+                    return suggestions[choice_int - 1]
+            print("Please enter 0 or a valid suggestion number.")
+    return name
+
+
+def prepare_match_data(matches_df: pd.DataFrame, interactive_resolution: bool = True) -> pd.DataFrame:
     """
     Prepare new match data for prediction by generating features.
     
@@ -48,8 +89,13 @@ def prepare_match_data(matches_df: pd.DataFrame) -> pd.DataFrame:
     missing_cols = [col for col in required_cols if col not in matches_df.columns]
     if missing_cols:
         raise ValueError(f"Missing required columns: {missing_cols}")
-    
     matches_prep = matches_df.copy()
+
+    # Resolve unknown player names with suggestions
+    if interactive_resolution:
+        known_players = load_known_players()
+        for col in ["player_1", "player_2"]:
+            matches_prep[col] = matches_prep[col].apply(lambda n: resolve_player_name(str(n), known_players))
     
     if 'winner' not in matches_prep.columns:
         matches_prep['winner'] = matches_prep['player_1']
@@ -119,7 +165,8 @@ def make_predictions(features_df: pd.DataFrame, model_path: str = "data/outputs/
 
 def predict_matches(matches_df: pd.DataFrame, 
                    model_path: str = "data/outputs/model_xgb.json",
-                   save_results: bool = True) -> pd.DataFrame:
+                   save_results: bool = True,
+                   interactive_resolution: bool = True) -> pd.DataFrame:
     """
     Complete prediction pipeline for new matches.
     
@@ -136,7 +183,7 @@ def predict_matches(matches_df: pd.DataFrame,
     
     model, feature_names = load_trained_model(model_path)
     
-    features_df = prepare_match_data(matches_df)
+    features_df = prepare_match_data(matches_df, interactive_resolution=interactive_resolution)
     
     predictions_df = make_predictions(features_df, model_path)
     
@@ -155,7 +202,7 @@ def predict_matches(matches_df: pd.DataFrame,
     return predictions_df
 
 
-def predict_from_csv(input_csv: str, model_path: str = "data/outputs/model_xgb.json") -> pd.DataFrame:
+def predict_from_csv(input_csv: str, model_path: str = "data/outputs/model_xgb.json", interactive_resolution: bool = True) -> pd.DataFrame:
     """
     Predict matches from a CSV file.
     
@@ -170,7 +217,7 @@ def predict_from_csv(input_csv: str, model_path: str = "data/outputs/model_xgb.j
     matches_df = pd.read_csv(input_csv)
     print(f"   Loaded {len(matches_df)} matches")
     
-    return predict_matches(matches_df, model_path)
+    return predict_matches(matches_df, model_path, interactive_resolution=interactive_resolution)
 
 
 def create_example_matches() -> pd.DataFrame:

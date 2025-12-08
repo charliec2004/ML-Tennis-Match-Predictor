@@ -15,3 +15,7 @@ data/processed/*
 !data/processed/splits/
 data/processed/splits/*
 !data/processed/splits/.gitkeep
+
+player_db.csv
+tennis-master-data.csv
+atp_tennis.csv

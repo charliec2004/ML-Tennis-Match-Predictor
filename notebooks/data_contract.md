@@ -58,4 +58,4 @@
 
 ### Target
 
-- target (1 if player_1 wins, 0 if not)
+- target (0 if player_1 wins, 1 if player_2 wins)

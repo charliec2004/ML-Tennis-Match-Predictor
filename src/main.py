@@ -107,7 +107,7 @@ def predict_future_matches_interactive() -> None:
         from predict import predict_from_csv
         
         print(f"   Predicting matches from: {Path(selected_file).name}")
-        predictions = predict_from_csv(selected_file)
+        predictions = predict_from_csv(selected_file, interactive_resolution=True)
         
         print(f"\n   PREDICTION RESULTS:")
         print(f"   {'Match':<40} {'Winner':<20} {'Confidence':<12}")
@@ -149,6 +149,19 @@ def main() -> Optional[dict]:
     raw = None
     df_feat = None
     splits = None
+
+    # Step 0: Fetch latest dataset from Kaggle API and build master data
+    print("\nStep 0: Fetching latest dataset from Kaggle and preparing master data...")
+    try:
+        from prepare_raw import build_master, update_players_db
+        df_master = build_master()
+        update_players_db(df_master)
+        print(f"   ✓ Master data pipeline complete")
+    except Exception as e:
+        print(f"   ✗ Error preparing raw data: {e}")
+        print(f"   Make sure kagglehub is installed: pip install 'kagglehub[pandas-datasets]'")
+        print(f"   And Kaggle API credentials are set up (~/.kaggle/kaggle.json)")
+        return None
     
     print("\nStep 1: Loading raw data...")
     try:

@@ -15,14 +15,13 @@ The project demonstrates:
 
 ## 2. Dataset
 
-- **Source**: Historical match data (65,000+ professional matches, 2000–2025).  
-- **Scope**: Men’s and women’s singles only.  
+- **Source**: Historical match data (66,000+ professional matches, 2000–2025).  
+- **Scope**: Men's singles (ATP matches).  
 - **Processing**:  
-  - Raw data cleaned and structured in Excel.  
-  - Exported to CSV.  
-  - Enriched with 38 engineered features via Python (pandas, scikit-learn, custom scripts).  
-- **Target Variable (Y)**: Binary outcome (Player 1 win = 1, Player 2 win = 0).  
-- **Input Features (X)**: Numerical and categorical features capturing skill, form, and context.  
+  - Raw data cleaned via `prepare_raw.py` from ATP dataset.
+  - Enriched with 38 engineered features via Python (pandas, custom ELO/match history processors).  
+- **Target Variable (Y)**: Binary outcome (Player 1 win = 0, Player 2 win = 1).  
+- **Input Features (X)**: Numerical and categorical features capturing skill, form, and context.
 
 ---
 
@@ -62,9 +61,9 @@ A total of 38 features were engineered. Key categories:
 
 To mimic real-world prediction conditions, time-based splits were used:
 
-- **Training set**: Matches up to 2018.  
-- **Validation set**: Matches from 2019–2022.  
-- **Test set**: Matches from 2023–August 2025.  
+- **Training set**: Matches up to 2018-12-31 (44,436 matches).  
+- **Validation set**: Matches from 2019-01-01 to 2022-12-31 (8,084 matches).  
+- **Test set**: Matches from 2023-01-01 onwards (7,134 matches) - completely unseen data.  
 
 This ensures models never train on data from the future relative to predictions.  
 
@@ -81,16 +80,17 @@ This ensures models never train on data from the future relative to predictions.
 
 3. **XGBoost (Gradient Boosting)**  
    - Ensemble of decision trees trained sequentially.  
-   - Uses early stopping (332 trees) to prevent overfitting.  
-   - Achieved higher **AUC (0.72)**, indicating stronger ranking performance than logistic regression.  
+   - Uses early stopping (210 trees) to prevent overfitting.  
+   - Achieved higher **AUC (0.71)**, indicating strong ranking performance.  
 
 ---
 
 ## 5. Performance Metrics
 
-- **Training Accuracy**: 69.9%  
-- **Test Accuracy**: 65.45%  
-- **Test AUC**: 0.72  
+- **Training Accuracy**: 70.3%  
+- **Validation Accuracy**: 64.7%  
+- **Test Accuracy**: 65.0%  
+- **Test AUC**: 0.713  
 
 Interpretation: The system generalizes reasonably well, balancing fit and predictive stability. Performance aligns with industry standards given feature limitations.  
 
@@ -121,7 +121,7 @@ The model was used to predict Round 1 Men's Singles matches for the 2025 US Open
 
 ## 8. Skills Demonstrated
 
-- **Data Engineering**: Cleaning, transformation, enrichment of 65k+ matches.  
+- **Data Engineering**: Cleaning, transformation, enrichment of 66k+ matches.  
 - **Feature Engineering**: Designed 38 custom features across multiple domains.  
 - **Machine Learning**: Logistic Regression and XGBoost model development.  
 - **Model Evaluation**: Accuracy, AUC, and overfitting assessment.  

@@ -3,6 +3,7 @@ contourpy==1.3.3
 cycler==0.12.1
 fonttools==4.59.1
 joblib==1.5.1
+kagglehub[pandas-datasets]
 kiwisolver==1.4.9
 matplotlib==3.10.5
 numpy==2.3.2

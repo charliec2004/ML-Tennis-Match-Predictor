@@ -1,0 +1,4 @@
+date,player_1,player_2,surface,tournament,round,best_of,series,court,series_level,is_outdoor,surf_fast,surf_hard,surf_clay,surf_grass,surf_carpet,best_of_3,best_of_5,rank_1,rank_2,rank_avg,rank_ratio,rank_diff,is_top10_match
+2025-08-25,Djokovic N.,Alcaraz C.,Hard,US Open,1,5,Grand Slam,Outdoor,6,1,1,1,0,0,0,0,1,1,2,1.5,0.5,-1,0
+2025-08-26,Swiatek I.,Sabalenka A.,Hard,US Open,1,3,Grand Slam,Outdoor,6,1,1,1,0,0,0,1,0,3,2,2.5,1.5,1,1
+2025-09-02,Federer R.,Nadal R.,Grass,Wimbledon,6,5,Grand Slam,Outdoor,6,1,1,0,0,1,0,0,1,8,14,11.0,0.5714285714,-6,0
