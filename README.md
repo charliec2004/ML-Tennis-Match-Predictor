@@ -151,12 +151,13 @@ The model's **65.45% accuracy on future matches** is competitive considering:
 git clone <repository-url>
 cd US-OPEN-PREDICTOR
 
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+# One-step setup (creates venv + installs requirements)
+bash setup.sh
 
-# Install dependencies
-pip install -r requirements.txt
+# Or do it manually:
+# python -m venv venv
+# source venv/bin/activate  # On Windows: venv\Scripts\activate
+# pip install -r requirements.txt
 ```
 
 ### Dependencies

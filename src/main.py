@@ -142,6 +142,47 @@ def predict_future_matches_interactive() -> None:
         print(f"   Check your CSV file format and try again.")
 
 
+def prompt_date_cutoff() -> Optional[pd.Timestamp]:
+    """Ask user if they want to cut off data after a given date; returns the cutoff or None."""
+    while True:
+        resp = input("\nWould you like to chop the data at a certain point? (y/n): ").strip().lower()
+        if resp in {"n", "no"}:
+            return None
+        if resp in {"y", "yes"}:
+            break
+        print("   Please enter 'y' or 'n'.")
+
+    while True:
+        date_str = input("Enter cutoff date (YYYY-MM-DD): ").strip()
+        try:
+            cutoff = pd.to_datetime(date_str, format="%Y-%m-%d")
+            return cutoff
+        except Exception:
+            print("   Invalid date. Please use YYYY-MM-DD.")
+
+
+def compute_dynamic_split_dates(dates: pd.Series, val_years: int = 4, test_years: int = 2):
+    """Compute split boundaries that move with the latest date to avoid empty test sets."""
+    min_date = dates.min()
+    max_date = dates.max()
+
+    desired_test_start = max_date - pd.DateOffset(years=test_years) + pd.Timedelta(days=1)
+    desired_val_start = desired_test_start - pd.DateOffset(years=val_years)
+
+    fallback = False
+    if desired_val_start <= min_date:
+        fallback = True
+        span = max_date - min_date
+        # proportional fallback: 60% train, 25% val, 15% test
+        train_end = min_date + span * 0.6
+        val_end = min_date + span * 0.85
+    else:
+        train_end = desired_val_start - pd.Timedelta(days=1)
+        val_end = desired_test_start - pd.Timedelta(days=1)
+
+    return train_end.normalize(), val_end.normalize(), fallback
+
+
 def generate_graphs() -> None:
     """Generate presentation graphs after pipeline completes."""
     print("\n\033[1;34mStep 7: Generating graphs\033[0m")
@@ -156,6 +197,7 @@ def generate_graphs() -> None:
         from graphs.upset_analysis import generate as upset
         from graphs.surface_round_breakdown import generate as surf_round
         from graphs.training_curves_plot import generate as train_curves
+        from graphs.threshold_sweep import generate as thresh_sweep
 
         generators = [
             ("performance_over_time", perf_over_time),
@@ -167,6 +209,7 @@ def generate_graphs() -> None:
             ("upset_analysis", upset),
             ("surface_round_breakdown", surf_round),
             ("training_curves", train_curves),
+            ("threshold_sweep", thresh_sweep),
         ]
 
         for name, func in generators:
@@ -210,6 +253,14 @@ def main() -> Optional[dict]:
     try:
         raw = pd.read_csv("data/raw/tennis-master-data.csv")
         print(f"   Loaded {len(raw):,} raw matches")
+        raw["date"] = pd.to_datetime(raw["date"])
+
+        cutoff = prompt_date_cutoff()
+        if cutoff is not None:
+            before = len(raw)
+            raw = raw[raw["date"] <= cutoff].reset_index(drop=True)
+            after = len(raw)
+            print(f"   Cutoff applied at {cutoff.date()}: {after:,} matches kept (was {before:,})")
     except FileNotFoundError:
         print("   Error: Could not find data/raw/tennis-master-data.csv")
         print("   Please ensure the raw data file exists.")
@@ -228,12 +279,17 @@ def main() -> Optional[dict]:
     try:
         df_feat['date'] = pd.to_datetime(df_feat['date'])
         
+        train_end_dt, val_end_dt, fallback = compute_dynamic_split_dates(df_feat['date'])
+        if fallback:
+            print("   Warning: not enough history for fixed 4y val/2y test windows; using proportional splits.")
+        print(f"   Split boundaries -> train_end: {train_end_dt.date()}, val_end: {val_end_dt.date()}")
+        
         splits = make_splits(
             df=df_feat,
             date_col="date",
             y_col="target",
-            train_end="2018-12-31",
-            val_end="2022-12-31"
+            train_end=train_end_dt.strftime("%Y-%m-%d"),
+            val_end=val_end_dt.strftime("%Y-%m-%d")
         )
         
         print(f"   Time-based splits created successfully!")
@@ -281,10 +337,17 @@ def main() -> Optional[dict]:
         print(f"   Valid matches:    {len(splits['val']['X']):,}")
         print(f"   Test matches:     {len(splits['test']['X']):,}")
         
+        def _range(meta_df):
+            dmin = meta_df["date"].min()
+            dmax = meta_df["date"].max()
+            if pd.isna(dmin) or pd.isna(dmax):
+                return "N/A"
+            return f"{dmin.strftime('%Y-%m-%d')} to {dmax.strftime('%Y-%m-%d')}"
+
         print(f"\nDATE RANGES:")
-        print(f"   Train: {splits['train']['meta']['date'].min().strftime('%Y-%m-%d')} to {splits['train']['meta']['date'].max().strftime('%Y-%m-%d')}")
-        print(f"   Valid: {splits['val']['meta']['date'].min().strftime('%Y-%m-%d')} to {splits['val']['meta']['date'].max().strftime('%Y-%m-%d')}")
-        print(f"   Test:  {splits['test']['meta']['date'].min().strftime('%Y-%m-%d')} to {splits['test']['meta']['date'].max().strftime('%Y-%m-%d')}")
+        print(f"   Train: {_range(splits['train']['meta'])}")
+        print(f"   Valid: {_range(splits['val']['meta'])}")
+        print(f"   Test:  {_range(splits['test']['meta'])}")
         
         print(f"\nFILES CREATED:")
         print(f"   Features:      data/processed/with_elo.csv")
