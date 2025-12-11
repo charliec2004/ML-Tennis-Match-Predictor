@@ -10,7 +10,7 @@ The original model suffered from a **player position confounding bias**. In the 
 
 Machine learning models are pattern-recognition engines that will learn **any** predictive signal in the training data, including spurious ones. The model was learning patterns like:
 
-- "Player_1 wins 52% of the time" 
+- "Player_1 wins 52% of the time"
 - "Players with higher ELO ratings tend to be in the player_1 column"
 - "Higher-ranked players are more often listed as player_1"
 
@@ -29,13 +29,14 @@ At prediction time, we have to choose which player goes in which column. If our 
 
 Imagine the training data happened to list the higher-ranked player as `player_1` 60% of the time:
 
-```
+``` fense
 Match 1: Djokovic (rank 1) vs Nadal (rank 2)    → player_1=Djokovic, target=0 (Djokovic wins)
 Match 2: Murray (rank 8) vs Federer (rank 3)    → player_1=Murray, target=1 (Federer wins)
 Match 3: Wawrinka (rank 4) vs Tsitsipas (rank 5) → player_1=Wawrinka, target=0 (Wawrinka wins)
 ```
 
 Even with identical features, the model learns:
+
 - When `rank_1 < rank_2` and player is in position 1 → slight boost to win probability
 - Rank features matter, but **position also matters**
 
@@ -69,6 +70,7 @@ player_2: "Djokovic", elo_p2: 2100, rank_2: 1
 ```
 
 **Features that get swapped:**
+
 - Direct features: `elo_p1 ↔ elo_p2`, `rank_1 ↔ rank_2`, `win_rate_all_p1 ↔ win_rate_all_p2`
 - Differential features: `elo_diff` → `-elo_diff`, `rank_diff` → `-rank_diff`
 - Ratio features: `rank_ratio` → `1/rank_ratio`
@@ -96,7 +98,7 @@ This averaging removes any residual position bias that might remain in the model
 
 ### Why This Approach?
 
-#### Alternative Approaches Considered:
+#### Alternative Approaches Considered
 
 1. **Force Consistent Ordering** (e.g., always put higher-ranked player first)
    - ❌ Loses information about matchup asymmetry
@@ -191,6 +193,7 @@ This approach is based on **data augmentation for invariance learning**:
 - **Test-Time Augmentation**: Averaging predictions over transformations reduces variance (ensemble effect)
 
 Similar techniques are used in:
+
 - Computer vision: rotating/flipping images
 - NLP: back-translation for language models
 - Recommender systems: user-item matrix symmetry
@@ -211,6 +214,7 @@ This fix represents a fundamental improvement in model architecture that should 
 ---
 
 **References:**
-- Data Augmentation in Machine Learning: https://arxiv.org/abs/1904.12848
-- Test-Time Augmentation for Prediction Robustness: https://arxiv.org/abs/1903.11369
-- Confounding Variables in ML: https://arxiv.org/abs/1901.04409
+
+- [Data Augmentation in Machine Learning](https://arxiv.org/abs/1904.12848)
+- [Test-Time Augmentation for Prediction Robustness](https://arxiv.org/abs/1903.11369)
+- [Confounding Variables in ML](https://arxiv.org/abs/1901.04409)
