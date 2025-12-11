@@ -160,11 +160,13 @@ bash setup.sh
 # pip install -r requirements.txt
 ```
 
-### Dependencies
+### Dependencies (pinned in `requirements.txt`)
 
-- **Core ML**: `xgboost`, `scikit-learn`, `pandas`, `numpy`
-- **Visualization**: `matplotlib`
-- **Data Processing**: `python-dateutil`, `pytz`
+- **Training + inference**: `xgboost==3.0.4`, `scikit-learn==1.7.1`, `pandas==2.3.1`, `numpy==2.3.2`, `scipy==1.16.1`
+- **Data ingest**: `kagglehub[pandas-datasets]` (pull the ATP dataset; see `KAGGLE_SETUP.md`), `python-dotenv` for optional `.env` secrets
+- **Visualization**: `matplotlib==3.10.5` plus `pillow`, `contourpy`, `fonttools`, `kiwisolver`, `cycler`, `pyparsing`
+- **Time + locales**: `python-dateutil`, `pytz`, `tzdata`
+- **Utilities**: `click`, `packaging`, `six`, `threadpoolctl` (support libs used by the stack)
 
 ## Quick Start
 
