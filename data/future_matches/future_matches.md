@@ -18,15 +18,18 @@ date,player_1,player_2,surface,tournament,round,best_of,series,court,rank_1,rank
 
 ### Step 2: Run Predictions
 
-**Option A: Interactive (recommended)**
+#### Option A: Interactive (recommended)
+
 ```bash
 python src/main.py
 ```
+
 - Answer 'n' to skip retraining
 - Answer 'y' when asked about future predictions
 - Select your CSV file from the list
 
-**Option B: Direct prediction**
+#### Option B: Direct prediction
+
 ```bash
 python -c "from predict import predict_from_csv; predict_from_csv('data/future_matches/my_matches.csv')"
 ```
@@ -51,6 +54,7 @@ These 4 columns are **mandatory**:
 | `surface` | Hard/Clay/Grass/Carpet | `Hard` | Case-insensitive |
 
 **Minimal CSV example:**
+
 ```csv
 date,player_1,player_2,surface
 2025-12-15,Djokovic N.,Alcaraz C.,Hard
@@ -72,6 +76,7 @@ Adding these columns **significantly improves prediction accuracy**:
 | `court` | Indoor/Outdoor | `Outdoor` | ⭐ Helpful |
 
 **Series values:**
+
 - `Grand Slam` - Australian Open, French Open, Wimbledon, US Open
 - `Masters 1000` - Indian Wells, Miami, Monte Carlo, Madrid, Rome, Canada, Cincinnati, Shanghai, Paris
 - `ATP500` - Rotterdam, Dubai, Barcelona, etc.
@@ -79,6 +84,7 @@ Adding these columns **significantly improves prediction accuracy**:
 - `International` - Other professional matches
 
 **Round values:**
+
 - `R128` - First round (128 draw)
 - `R64` - Second round (64 draw)
 - `R32` - Third round
@@ -88,6 +94,7 @@ Adding these columns **significantly improves prediction accuracy**:
 - `F` - Final
 
 **Recommended CSV example:**
+
 ```csv
 date,player_1,player_2,surface,tournament,round,best_of,series,court,rank_1,rank_2
 2025-08-25,Djokovic N.,Alcaraz C.,Hard,US Open,F,5,Grand Slam,Outdoor,1,3
@@ -121,7 +128,7 @@ cat data/raw/players_db.csv | grep -i "djokovic"
 
 If you enter a player name not in the database, you'll see:
 
-```
+``` text
 Unknown player 'Djokovic N'. Did you mean:
    1. Djokovic N.
    2. Djokovic M.
@@ -138,6 +145,7 @@ The system will suggest close matches - just type the number and press Enter.
 ### Example: Predicting US Open Finals
 
 **1. Create `us_open_finals.csv`:**
+
 ```csv
 date,player_1,player_2,surface,tournament,round,best_of,series,court,rank_1,rank_2
 2025-09-08,Djokovic N.,Alcaraz C.,Hard,US Open,F,5,Grand Slam,Outdoor,1,2
@@ -146,11 +154,13 @@ date,player_1,player_2,surface,tournament,round,best_of,series,court,rank_1,rank
 ```
 
 **2. Run prediction:**
+
 ```bash
 python src/main.py
 ```
 
 **3. Output in `data/outputs/predictions.csv`:**
+
 ```csv
 date,player_1,player_2,prob_p1_wins,prob_p2_wins,predicted_winner,confidence
 2025-09-08,Djokovic N.,Alcaraz C.,0.48,0.52,Alcaraz C.,0.52
@@ -159,6 +169,7 @@ date,player_1,player_2,prob_p1_wins,prob_p2_wins,predicted_winner,confidence
 ```
 
 **Interpreting results:**
+
 - **Alcaraz C.** predicted to beat Djokovic with 52% confidence (toss-up!)
 - **Sinner J.** predicted to beat Medvedev with 61% confidence (slight favorite)
 - **Rublev A.** predicted to beat Fritz with 56% confidence (slight favorite)
@@ -178,7 +189,7 @@ date,player_1,player_2,prob_p1_wins,prob_p2_wins,predicted_winner,confidence
 
 You can have multiple CSV files for different tournaments:
 
-```
+``` text
 data/future_matches/
 ├── us_open_2025.csv
 ├── wimbledon_2025.csv
@@ -207,15 +218,19 @@ print(predictions)
 ### Common Issues
 
 **Issue:** `FileNotFoundError: No model found`
+
 - **Solution:** Train the model first with `python src/main.py` (answer 'y' to training)
 
 **Issue:** `Unknown player 'Smith J.'`
+
 - **Solution:** Check `data/raw/players_db.csv` for exact name format
 
 **Issue:** Predictions seem random (all ~50%)
+
 - **Solution:** Add `rank_1` and `rank_2` columns for better accuracy
 
 **Issue:** `KeyError: 'elo_p1'`
+
 - **Solution:** Ensure you have at least `date,player_1,player_2,surface` columns
 
 ---
