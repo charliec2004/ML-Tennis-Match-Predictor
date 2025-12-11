@@ -167,6 +167,42 @@ def evaluate_model(model: xgb.Booster, X_feats: pd.DataFrame, y_true: np.ndarray
     }
 
 
+def save_split_predictions(
+    model: xgb.Booster,
+    feature_names: List[str],
+    split_name: str,
+    splits_dir: str = "data/processed/splits",
+    output_dir: str = "data/outputs",
+) -> None:
+    """
+    Save a readable CSV with meta + features + predictions for a split.
+    Does not affect training; purely for analysis/presentation.
+    """
+    splits_path = Path(splits_dir)
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+
+    X = pd.read_csv(splits_path / f"X_{split_name}.csv")
+    meta = pd.read_csv(splits_path / f"meta_{split_name}.csv")
+    y = pd.read_csv(splits_path / f"y_{split_name}.csv")["target"]
+
+    dmatrix = xgb.DMatrix(X[feature_names], feature_names=feature_names)
+    probs = model.predict(dmatrix)
+    preds = (probs >= 0.5).astype(int)
+
+    combined = pd.concat([meta.reset_index(drop=True), X[feature_names].reset_index(drop=True)], axis=1)
+    combined["prob_p2_wins"] = probs
+    combined["prob_p1_wins"] = 1 - probs
+    combined["predicted_target"] = preds
+    combined["actual_target"] = y
+    combined["predicted_winner"] = combined["player_2"].where(preds == 1, combined["player_1"])
+    combined["correct"] = (preds == y).astype(int)
+
+    out_file = output_path / f"{split_name}_predictions_with_meta.csv"
+    combined.to_csv(out_file, index=False)
+    print(f"   Saved {split_name} predictions with meta to {out_file}")
+
+
 def analyze_feature_importance(model: xgb.Booster, feature_names: List[str], top_k: int = 20) -> pd.DataFrame:
     """Analyze and display feature importance from XGBoost model."""
     print(f"\nTop {top_k} Features by Importance:")
@@ -250,6 +286,10 @@ def train_xgboost_pipeline() -> Tuple[xgb.Booster, Dict[str, Any]]:
         
         print(f"\nSaving model and results...")
         save_model_and_results(model, feature_names, results, importance_df, evals_result=evals_result)
+
+        # Save human-readable predictions with meta for each split (not used in training)
+        for split in ["train", "val", "test"]:
+            save_split_predictions(model, feature_names, split)
         
         val_auc = results['val']['auc']
         test_auc = results['test']['auc']
