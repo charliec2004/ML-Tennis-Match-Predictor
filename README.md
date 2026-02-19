@@ -326,6 +326,3 @@ SOFTWARE.
 ## Acknowledgments
 
 - ATP and tennis data providers ([ATP Tennis Dataset (2000-2023)](https://www.kaggle.com/datasets/dissfya/atp-tennis-2000-2023daily-pull/versions/829?resource=download))
-- XGBoost development team
-- Professional tennis statistical analysis community
-- Open source machine learning ecosystem
